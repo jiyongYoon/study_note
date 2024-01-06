@@ -101,7 +101,10 @@
 - `Driver`에게 명령을 내릴 수 있는 핵심 기능을 가진 것을 `요소(Engine)`라고 한다.
 - `Engine`에게 어떤 동작을 요청하기 위해서는 반드시 엔진이 제공하는 `Interface`를 통해야 한다.
   - 이 인터페이스를 `대상체`라고 부를 수 있으며, App 레벨에서 `File`의 형태로 존재한다.
-- 각 `Process`는 인터페이스를 통해 Read / Write 작업이 이루어지게 된다.
+  - `Kernel` 모드로 들어가는 이 부분의 interface를 정확한 용어로는 `System Call`이라고 부른다.
+- 각 `Process`는 인터페이스(System Call)를 통해 Read / Write 작업이 이루어지게 된다.
+  - `Driver`는 System Call을 받으면 `IRQ` (Interrupt Request)가 발생한다.
+  - `IRQ`는 장치마다 고유 번호를 갖는다.
 
 ***
 
