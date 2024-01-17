@@ -45,8 +45,47 @@
   -> `시분할사용`(누구 잠깐 쓰고, 누구 잠깐 쓰고,,,) <br>
   -> 무척 짧은 시간이기 때문에 동시에 처리하는것처럼 느껴지게 된다.
 
+### 프로세스
+
+- (HDD에 설치된) 프로그램이 RAM 메모리에 올라가서 CPU의 연산이 진행되는 상태(Instance화)를 `Process`라고 한다.
+- OS가 프로세스를 관리하는 자료구조는 `Queue`다.
+  - 프로세스가 Ready 상태인 친구들이 줄을 서있다.
+  - Dispatcher? 관리자, 관리원 -> Queue에 줄을 서서 실행할 Task들이 나열되어 있을 때, 앞에서부터 하나씩 꺼내서 실행한다. 
+
+### 프로세스의 라이프 사이클
+
+  <img src="https://github.com/jiyongYoon/study_db_realmysql/assets/98104603/236887e5-399d-437e-8095-b1c7d1568027" alt="adder" width="60%" />
+
+  1. 생성 (new)
+  2. 준비 (ready)
+  3. 실행 (running) <br>
+     iii-1. 대기 (waiting): Device에 I/O Request 요청을 하고 Response가 올 때까지 기다리는 상태
+     - Blocking I/O: Response가 올 때까지 프로세스가 기다림 
+     - Non-Blocking I/O: Response가 안와도 다른일 하러감(실행상태로 감)
+  4. 완료 (terminated)
+
+### 추가적인 프로세스의 상태
+
+  5. 휴식 (Sleep): 자발적으로 이탈(ex, sleep() )
+  6. 보류 (Suspend): 외부 요인으로 이탈(ex, OS 레벨에서 swap 날 때 ) 
+  - 두 상태 모두 `Queue` 대기열에서 이탈하게 된다.
+    - 일정 조건이 충족되면(ex, sleep(1000) -> 1초 후) 지난 후 대기열 맨 뒤로 다시 재진입한다.
+  - 프로세스의 작업이 스위칭 될 때, 기존에 작업하다가 멈추었던 정보들을 저장해두었다가 다시 불러와야 한다. -> `PCB`
+
+  <img src="https://github.com/jiyongYoon/study_db_realmysql/assets/98104603/d2474bc2-f0e7-4cce-827c-6c4658289db1" alt="adder" width="60%" />
+  
+
 - Windows 운영체제는 프로세스를 관리하기 위한 `PCB`(Process Control Block)와 스레드를 관리하기 위한 `TCB`가 있다.
   - PCB 안에는
     1) PID(양의 정수, 32bit)
     2) Memory 관련 정보: 작업할 때 필요한 데이터가 어디 있는지 알기 위해
+    3) 프로그램 카운터(PC)
+    4) 프로세스 우선순위
+    5) 각종 레지스터 정보
 
+### 프로세스의 생성과 복사
+
+- 컴퓨터에서 프로그램이 실행되면 OS는 새로운 프로세스를 생성한다. `Windows: createProcess()` `UNIX: fork(), exec()`
+  - [fork()와 exec()의 차이점](https://woochan-autobiography.tistory.com/207)
+- 어떤 프로그램을 실행한다면 `현재 프로세스(부모 프로세스)`가 `새 프로세스(자식 프로세스)`를 생성한 것이다.
+- 프로세스는 컴퓨터 자원(`CPU` + `가상메모리`)을 할당 받는다.
