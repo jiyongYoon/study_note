@@ -37,3 +37,18 @@
   - 상대주소 = `Logical` = `Virtual`
 
 <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/edff50ba-162b-4b04-a6a6-b58f45a46a38" alt="adder" width="50%" />
+
+
+## 가상 메모리 개요
+
+<img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/82a78859-1bf1-429e-b5ab-f7a493a4039a" alt="adder" width="50%" />
+
+- 각 프로세스마다 할당하는 메모리이다. (VMS, Virtual Memory Space)
+- 실제 H/W에 물리적으로 할당되는 메모리(절대주소)와는 주소(상대주소)가 다르다.
+  - 실제 H/W에는 실제 RAM과 HDD의 일부분을 함께 메모리 공간으로 사용하며, 
+    HDD 부분은 RAM에 비해 많이 느리기 때문에 RAM 공간이 부족한 경우 OS가 자체적으로 판단하여 스왑하여 HDD로 빼기도 한다. 
+    - ex, 최대 절전 모드의 경우, RAM에 있는 데이터들을 모두 HDD로 옮기고 전원을 종료하며, 전원을 다시 켜면 다시 RAM으로 올리는 등의 작업을 하여 유지한다.
+- 실제 H/W의 **메모리 관리적인 측면**에서의 의미가 가장 크다.
+  - Kernel에서 `MM(Memory Manager)`가 가상메모리 - 실제메모리 를 `Mapping Table(배열구조)`로 관리한다.
+  - 만약 프로세스가 동작 중에 죽는 일이 발생하면, OS가 인지하여 실제 매핑 테이블에서 실제 H/W에 할당된 부분의 자원을 바로 회수할 수 있다!
+  - 이를 통해 낭비 없이 컴퓨터 자원을 계속해서 최적화 하여 사용할 수 있다!
