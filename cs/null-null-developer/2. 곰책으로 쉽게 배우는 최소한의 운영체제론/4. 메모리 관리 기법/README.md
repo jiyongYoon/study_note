@@ -52,3 +52,15 @@
   - Kernel에서 `MM(Memory Manager)`가 가상메모리 - 실제메모리 를 `Mapping Table(배열구조)`로 관리한다.
   - 만약 프로세스가 동작 중에 죽는 일이 발생하면, OS가 인지하여 실제 매핑 테이블에서 실제 H/W에 할당된 부분의 자원을 바로 회수할 수 있다!
   - 이를 통해 낭비 없이 컴퓨터 자원을 계속해서 최적화 하여 사용할 수 있다!
+
+## 페이징 기법의 구현
+
+<img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/28592b3a-858b-4f3f-8e93-5e32613b6a4d" alt="adder" width="50%" />
+
+- (C언어) 만약 페이지 테이블에서 VA = <P, D> 의 P값(페이지)에 실제 할당된 물리 주소가 없는 경우, 해당 주소에 값을 할당하거나 접근하려고 할 때, `Page Fault!`와 같은 에러가 뜨는게, 이 이유(가상 주소와 물리 주소는 동일하지 않고, 중간에 커널의 매핑 테이블로 관리되기) 때문이다.
+
+## 가상 메모리 접근 권한
+
+<img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/a1bf5579-c138-4a84-8ef8-8e071884cb77" alt="adder" width="50%" />
+
+- 페이지 테이블에서 메모리 주소 별로 권한을 체크한다. (수정 가능하다)
