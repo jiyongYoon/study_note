@@ -30,3 +30,38 @@
 <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/73205b88-fc4f-4857-8832-b2d8af3f3689" alt="adder" width="80%" />
 <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/b6ea702d-ac89-47e4-834a-1e19fbee6f31" alt="adder" width="80%" />
 <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/5219e40b-1fc0-42d7-aefa-d39436b36fe4" alt="adder" width="80%" />
+
+### TCP/IP 송-수신 구조
+
+- File Download 상황을 가정해보자.
+  - Server로부터 1.4MB 크기의 파일을 다운로드 받는다고 가정하면, MTU 최대 크기가 1.4xxKB이기 때문에 약 1000여개의 패킷으로 쪼개져서 전송되게 된다.
+
+<img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/d2327a71-9dc4-424f-809f-b63e35a723cd" alt="adder" width="100%" />
+
+**송-수신 과정**
+
+[송신]
+1. HDD에 있는 File을 Process 메모리 버퍼에 COPY한다.
+2. Network로 전송하기 위한 File(Socket) 입출력을 시작한다. 이 과정에서의 데이터 단위는 `Stream`이다. `Stream`은 데이터의 크기보다는 형태에 대한 개념이며, 파일 읽기 시작 ~ 끝 을 의미한다.
+3. L4 TCP 스텍을 만나게 되면 분해를 시작한다. 이 과정에서의 단위는 `Segment`이며, OS 단위에서 진행하게 된다. <br>
+   L3 IP 스텍을 만나게 되면 포장을 시작한다. 이 과정에서의 단위는 `Packet`이며, 송장(`Header`)이 붙게 된다.
+4. L2 Layer에서 NIC Driver를 통해 Packet이 전송되며, 이 과정에서의 단위는 `Frame`이다. `Frame`은 네트워크 환경과 상황에 따라 유동적으로 수시로 변하게 된다. <br>
+
+[수신]
+5. 클라이언트의 NIC 을 통해 `Frame`에서 Packet이 튀어나온다.
+6. L3 Layer에서 `Packet`이 소멸되고 정보인 `Segment`가 튀어나온다.
+7. L4 Layer에서 파일 입출력을 하고 있던 Socket 버퍼로 데이터인 `Segment`를 담는다.
+8. 실제 사용하는 Process의 메모리 버퍼에서 Socket 버퍼에 있는 데이터를 가져온다.
+
+**장애상황**
+- Loss(데이터 유실): 어찌된지는 Internet에게 물어봐야함. (`network` 이슈)
+- Re-transmission & ACK Duplicate: (`network`, `end-point` 이슈) 
+  - Server에서 패킷을 포장하여 보낼때, 1개만 보내지 않고 여러개를 한번에 보내고나서 잠깐 Wait를 하게 된다.
+  - 수신자로부터 오는 `ACK` 신호를 받기 위해서인데, 여기에는 `다음에 받을 패킷 번호`와 `여유 공간` 정보가 있다.
+  - 이를 통해 다음에 보낼 패킷을 인터넷으로 다시 전송하게 되는데, 기다려도 `ACK`가 오지 않으면 동일한 패킷을 다시 보내게 된다.
+  - 이 과정이 짧은 순간에 일어나면, 
+    - 송신자는 `ACK`가 오기 전에 동일한 데이터를 다시 보내게 되며(`Re-transmission`)
+    - 수신자는 동일한 데이터에 대해 동일한 `ACK`를 다시 보내게 된다(`ACK Duplicate`)
+- Out of order: 패킷의 순서가 맞지 않거나, 중간 패킷이 없는 경우 (`network` 이슈)
+- Zero window: 수신측이 보내는 `ACK` 응답에 담기는 `여유 공간`이 부족한 경우다. (`end-point(APP)` 이슈)
+  - 수신 측에서의 7 -> 8 번 과정에서, 어떤 이유에서든지 데이터를 사용할 Process가 socket 버퍼의 segment를 가져가는 속도가 느리면 발생하게 된다.
