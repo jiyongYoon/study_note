@@ -65,3 +65,51 @@
 - Out of order: 패킷의 순서가 맞지 않거나, 중간 패킷이 없는 경우 (`network` 이슈)
 - Zero window: 수신측이 보내는 `ACK` 응답에 담기는 `여유 공간`이 부족한 경우다. (`end-point(APP)` 이슈)
   - 수신 측에서의 7 -> 8 번 과정에서, 어떤 이유에서든지 데이터를 사용할 Process가 socket 버퍼의 segment를 가져가는 속도가 느리면 발생하게 된다.
+
+### IPv4 Header 형식
+
+<img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/060072f8-5c72-4c45-8b46-8eab7a28519d" alt="adder" width="60%" />
+
+- Wireshark로 IPv4 Header를 확인한 내용 
+
+  <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/8e67a960-2757-448d-8b84-aaa2b8b1809a" alt="adder" width="60%" />
+
+  - Version: `4` -> IPv4를 나타냄
+  - IHL: Header Length: `5` (5행, 즉 4 bytes * 5 = 20 bytes를 나타냄) 
+  - TOS
+  - Total length: 총 패킷의 길이. 이론상 2^16인 64KB까지 가능하나 실제로는 MTU 사이즈로 운용된다.
+  - Identification
+  - Flags, Fregment offset: 단편화 관련(MTU로 자르는것 관련)
+  - TTL: Time to Live. 네트워크에서 이동 단위인 홉(hop)을 지날때마다 1씩 줄어들며, TTL 값이 모두 지나면 해당 패킷은 소멸된다. (패킷이 영영 인터넷을 떠도는 것을 방지)
+  - Protocol: Payload에 다시 Header가 오는 경우, 어떤 방식으로 해석할 것인지 명시
+  - Header checksum: 보안성은 없는 패킷 손상 관련 체크썸
+  - address: 출발지, 목적지가 있음
+
+### Subnet Mask
+
+<img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/79bcd1f2-0088-4fe0-af54-8aefc2bfa868" alt="adder" width="60%" />
+
+- `1111 1111` `1111 1111` `1111 1111` | `0000 0000` 으로 기존 주소를 Mask 연산(bit별 AND 연산)을 하면 마지막 자리인 `Host ID`를 제거한 `Network ID`주소를 얻을 수 있다. 
+- 이러한 용도로 사용되던 것이 Subnet Mask였다.
+`=> 그러나 요즘은 컴퓨터가 너무 좋아졌다.`
+- `CIDR 표기법` 
+
+  <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/3db76d31-4c97-44f1-a792-4c2cb811f38e" alt="adder" width="40%" />
+
+  - 이 부분을 `Network ID` 라고 하자고 명시하는쪽으로 변하게 됨. (이는 관리적인 측면에서 보다 효율적이고 직관적이다.)
+
+### Broadcast IP 주소
+
+<img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/63508e17-8594-4881-8607-e30a0a797022" alt="adder" width="60%" />
+
+- 네트워크 내의 모든 곳으로 쏘게 됨
+- 따라서 네트워크 부하가 필연적으로 생김!
+
+### Host 자신을 가리키는 IP 주소
+
+`127.0.0.1`
+
+- 내가 나에게 `접속`, `연결`한다?
+  - 나의 `Process` 간의 통신을 뜻한다! => `IPC 통신`
+  
+  <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/2f54d751-a5c1-4eb1-8d08-633d436aae49" alt="adder" width="60%" />
