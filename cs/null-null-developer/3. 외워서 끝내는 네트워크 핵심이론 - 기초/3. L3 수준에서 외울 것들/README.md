@@ -113,3 +113,48 @@
   - 나의 `Process` 간의 통신을 뜻한다! => `IPC 통신`
   
   <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/2f54d751-a5c1-4eb1-8d08-633d436aae49" alt="adder" width="60%" />
+
+### TTL과 단편화
+
+- TTL: Time To Live. Hop을 지날때마다 -1씩 하여 0이 되면 소멸.
+- 단편화: MTU 크기의 차이로 발생. 패킷을 보내는 중 MTU가 더 작은쪽으로 보내게 되면 패킷을 더 단편화하게 된다.
+  - 단편화 작업은 MTU가 작은 Router에서 진행하게 되며,
+  - 단편화 된 패킷은 마지막 수신측에서 다시 재조립하게 된다.
+    - 수신측의 NIC -> Driver -> IP 스텍을 만나게 되면 단편화된 패킷이 하나로 조립이 되고
+    - 조립이 된 후에 전체 내용에서 Segment를 추출하여 TCP 스텍으로 보내게 된다.
+- 단편화는 언제 발생하나?
+  - 요즘같은 시대에는 MTU가 1500이 안되는 경우는 거의 없다. 
+  - 보통 `VPN (IPSec)`이 중간에 껴있으면 발생한다.
+
+### 인터넷 설정 자동화를 위한 DHCP
+
+- L3 설정
+  - IP 주소
+  - Subnet mask
+  - Gateway IP 주소
+- DNS 주소
+- 보통의 경우 자동설정을 이용하게 된다. == `DHCP`를 이용하겠다는 뜻.
+- DHCP(Dynamic Host Configuration)
+
+  <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/9b742f6a-cd11-43e2-ab7e-b964491b2411" alt="adder" width="60%" />
+
+  - 인터넷 설정 관련 데이터를 자동으로 해주는 것이 핵심. 
+
+### ARP
+
+  <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/318ee34c-43ce-4821-83ee-6b695e85b3d0" alt="adder" width="60%" />
+
+- Address Resolution Protocol
+  - Address: IPv4, Mac 두가지를 말함.
+  - ARP는 IP 주소로 MAC 주소를 알아내려고 할 때 활용된다.
+  - 보통의 경우 PC 부팅 시 Gateway의 MAC 주소를 찾아내기 위해 ARP Request가 발생한다.
+  - Gateway를 지나서 인터넷으로 넘어오면 그 단계에서는 L3 Layer이기 때문에 L2 Mac Address가 필요없다.
+    - 즉, Naver 서버의 Mac Address는 필요없다는 말이다.
+    - 그러나 내가 속한 Network에서 Naver에 접속하기 위해서는 반드시 Gateway를 지나야 하며, 때문에 Gateway Mac Address를 알아내기 위한 ARP Request가 생성되는 것이다.
+
+### Ping과 RTT
+
+- Ping은 유틸리티(프로그램)임.
+- 특정 Host에 대한 RTT(Round Trip Time)을 측정할 목적으로 사용됨.
+  - RTT: 서버에게 요청을 하고나서 응답을 받을때까지의 속도.
+- ICMP 프로토콜을 이용함.
