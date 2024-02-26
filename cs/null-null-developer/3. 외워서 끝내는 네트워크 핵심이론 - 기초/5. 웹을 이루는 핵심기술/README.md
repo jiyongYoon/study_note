@@ -112,3 +112,7 @@
 - HTTP는 문자열로 구성되어 있다.
 - 헤더는 크게 `요청`, `응답`으로 구분된다.
 - 요청에 사용되는 메서드는 주로 `GET`, `POST` 이다.
+
+### 웹 서비스 구조의 기본이론과 WAS, RESTful API, JVM
+
+<img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/64b0213b-17cc-42de-8b04-22c09e3f955b" alt="adder" width="100%" />
