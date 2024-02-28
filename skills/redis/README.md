@@ -100,6 +100,8 @@
 - 데이터 삭제 `DEL {key}` (삭제한 데이터 갯수를 리턴)
 - 종료 `exit`
 
+---
+
 ## 6. 데이터 타입
 
 ### String
@@ -152,7 +154,7 @@
 
   <img src="https://github.com/jiyongYoon/study_note/assets/98104603/170ba6ac-c154-4662-b89d-61597c3a4f13" alt="adder" width="60%" />
   <img src="https://github.com/jiyongYoon/study_note/assets/98104603/ac1326bf-eff0-4f16-b8e5-6064048f7d41" alt="adder" width="60%" />
-  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/1f0eed31-9043-415e-ba6b-7f1dba9efabc" alt="adder" width="60%" />
+  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/1f0eed31-9043-415e-ba6b-7f1dba9efabc" alt="adder" width="40%" />
 
 ### Stream
 - append-only log에 consumer groups과 같은 기능을 더한 자료 구조
@@ -173,7 +175,7 @@
 - 거리 계산, 범위 탐색 등 지원
     
   <img src="https://github.com/jiyongYoon/study_note/assets/98104603/6a375b64-c952-4d4e-8f27-5edb14290b58" alt="adder" width="60%" />
-  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/3e33538b-fd58-4272-be4e-e74c13f03913" alt="adder" width="60%" />
+  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/3e33538b-fd58-4272-be4e-e74c13f03913" alt="adder" width="40%" />
 
 ### Bitmaps
 - 실제 데이터 타입은 아니고, String에 binary operation을 적용한 인터페이스
@@ -184,9 +186,80 @@
   - 날짜 별 log-in 을 체크하고 싶은 경우, 123번 유저는 1/1, 1/2 로그인하였고 456번 유저는 1/1만 로그인하였다고 가정하고 명령어 실습
   - 비트 연산은 `BITOP` 으로 가능하며, 연산결과는 다른 key값에 저장이 됨
 
-  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/66e2626f-82bb-4e8b-b810-c413d5f8148e" alt="adder" width="60%" />
+  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/66e2626f-82bb-4e8b-b810-c413d5f8148e" alt="adder" width="40%" />
   
   - 이 안에 실제 데이터는 bit 결과값이라 binary 값이 들어있음
   
     <img src="https://github.com/jiyongYoon/study_note/assets/98104603/fea05914-9f4d-4a5d-b442-5b708fbc6c7d" alt="adder" width="60%" />
 
+### HyperLogLog
+- 집합의 cardinality를 추정할 수 있는 확률형 자료구조
+- 결과값이 실제와 다소 오차가 있을 수 있음을 내포함
+  - 평균 에러 0.81%이며, 정확성 일부를 포기하고 저장공간을 매우 효율적으로 사용함
+  - 해시값으로 count를 하기 때문에 해시 충돌이 일어나는 경우 오차가 발생할 수 있음
+  - 즉, 실제 값을 저장하지 않음
+    
+    <img src="https://github.com/jiyongYoon/study_note/assets/98104603/f15274d5-6519-4407-8d14-565d7c133018" alt="adder" width="60%" />
+    <img src="https://github.com/jiyongYoon/study_note/assets/98104603/c837f81f-18ba-4c06-aa85-f0fac4f73bd5" alt="adder" width="60%" />
+    
+    - 바이너리로 저장된 모습
+
+### BloomFilter
+- element가 집합 안에 포함되었는지 확인할 수 있는 확률형 자료구조(membership test)
+- 결과값이 실제와 다소 오차가 있을 수 있음을 내포함
+  - 역시 정확성 일부를 포기하고 저장공간을 매우 효율적으로 사용함
+  - 특히 `false positive` 즉, 실제로 포함되지 않은 member를 포함되었다고 잘못 예측하는 경우가 발생함
+  - 해시값을 2개 만들어서 표시하며, 검증하고자 하는 데이터가 들어오면 해시값을 만들어 2개가 있으면 포함, 없으면 포함하지 않는다고 판단하는 원리로 동작함
+  - 때문에 역시 해시충돌이 발생하면 실제로 포함되지 않았는데 포함이 되었다고 잘못 예측하는 경우가 발생할 수 있음
+- 해당 자료구조는 다른 모듈이 추가되어야 함(redis/redis-stack-server 이미지를 활용하면 BloomFilter를 사용할 수 있음)
+  `docker run -p 6379:6379 -d --rm redis/redis-stack-server`
+
+  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/c7898ac3-4aaa-44ba-91a4-564e5aad405a" alt="adder" width="60%" />
+
+---
+
+## 7. Redis의 특수 명령어들
+
+### 데이터 만료
+- 특정시간 이후 만료시키는 기능. TTL(Time To Live)
+- 초단위로 기록함
+- 만료된 데이터는 더이상 조회되지는 않음
+- 저장공간에서 바로 삭제하지는 않고 만료료 표시 후 백그라운드에서 주기적으로 삭제함
+- **명령어**
+  - 생성1: `SET {key} {value}` 이후 `EXPIRE {key} {second}`
+  - 생성2: `SETEX {key} {second} {value}`
+  - 조회: `TTL {key}` -> 만료 이전에는 `남은 초` / 만료 이후에는 `-2` / TTL 설정 없는경우 `-1`
+  
+    <img src="https://github.com/jiyongYoon/study_note/assets/98104603/93f512d8-2c48-4cb9-8ead-43f9f4c15597" alt="adder" width="60%" />
+    <img src="https://github.com/jiyongYoon/study_note/assets/98104603/74ed02dc-01f4-4f14-94ca-e6f5bc51b1b0" alt="adder" width="60%" />
+  
+### SET NX/XX
+- NX: 해당 Key가 존재하지 않는 경우에만 SET
+- XX: 해당 Key가 이미 존재하는 경우에만 SET
+- Null Reply: SET이 동작하지 않는 경우 (nil) 응답
+    
+  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/84203d6f-fd4b-46e5-bf13-a40405743c73" alt="adder" width="60%" />
+
+### Pub/Sub
+- Publisher와 Subscriber가 서로 알지 못해도 통신이 가능하도록 `decoupling`된 패턴
+- Publisher는 Channel에 메시지를 발행
+- Subscriber는 Channel을 구독하여 해당 채널에 발행된 메시지를 수신
+  
+  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/a64c1216-94c0-4623-a0f6-8ad4bcf69681" alt="adder" width="100%" />
+
+### Pipeline
+- 다수의 commands를 한 번에 요청하여 네트워크 성능을 향상시키는 기술
+- Round-Trip Times 최소화
+- 대부분의 클라이언트 라이브러리에서 지원
+
+### Transaction
+- 다수의 명령을 하나의 트랜잭션으로 처리하여 원자성을 보장하는 기술
+- 중간에 에러가 발생하면 모든 작업 Rollback
+- 하나의 트랜잭션이 처리되는 동안 다른 클라이언트의 요청이 중간에 끼어들 수 없음
+- pipeline은 네트워크 퍼포먼스 향상을 위해 여러개의 명령어를 한 번에 요청하는 것이지만, Transaction은 원자성을 보장하기 위해 다수의 명령을 하나처럼 처리하는 기술임
+- **명령어**
+  - 트랜잭션 시작: `MULTI`
+  - 트랜잭션 커밋: `EXEC`
+  - 트랜잭션 롤백: `DISCARD`
+  
+  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/7ee72a19-b7f8-4e21-8677-8ada6e94f20e" alt="adder" width="30%" />
