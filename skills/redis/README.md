@@ -263,3 +263,136 @@
   - 트랜잭션 롤백: `DISCARD`
   
   <img src="https://github.com/jiyongYoon/study_note/assets/98104603/7ee72a19-b7f8-4e21-8677-8ada6e94f20e" alt="adder" width="30%" />
+
+---
+
+## 8. Redis 데이터 타입 활용 실전
+
+### OTP(One-Time Password)
+- 인증을 위해 사용되는 임시 비밀번호
+- DB에 굳이 저장하지 않고 잠깐 인증용도로 사용할 데이터 처리
+
+### 분산락(Distributed Lock)
+- 다수의 프로세스에서 동일한 자원에 접근할 때, 동시성 문제를 해결하기 위한 기술
+- DB에 레코드락을 사용하는 경우, 더 안전하지만 성능의 저하가 있을 수 있기 때문에, 구조와 필요에 따라 맞게 사용
+- 접근을 제어할 Resource를 표시하는 key를 설정한 후, 의미없는 값(보통 1)을 `NX` 명령어를 사용하여 접근하게 함
+- **흐름**
+  - `SET {key} 1 NX`: `NX` 명령어는 해당 키가 존재하지 않는 경우에만 SET을 진행한다.
+  - `SET {key} 1 NX` -> `(nil)` : 만약 키가 존재하는 경우라면 다른 프로세스가 해당 리소스에 락을 걸었다는 뜻이므로 대기해야 하고
+  - `SET {key} 1 NX` -> `OK`: 만약 키가 존재하지 않는 경우라면 SET이 진행될 것이다.
+  - `DEL {key}`: 해당 리소스에 처리가 모두 끝난 프로세스는 마지막에 지워주면 된다.
+
+### Rate Limiter
+- 시스템 안정성/보안을 위해 `요청의 수`를 제한하는 기술
+  - IP별, USER별, App별 등 기준을 다양하게 가져감
+- **Fixed Window**
+  - **흐름**
+    - 고정된 시간(1분) 안에 특정 api의 요청 수를 제한하는 방법을 구현한다면? 
+    - 유저의 api 요청이 들어옴
+    - `GET {api url}:{minute}` 해당 요청을 식별하는 key 생성하여 요청 횟수 GET
+    - `GET {api url}:{minute}` -> `수` 리턴 수가 기준수 미만이면 Response를 주고
+      - `MULTI` -> `INCR {api url}:{minute}` -> `EXPIRE {api url}:{minute} 60` -> `EXEC` 로 요청 횟수 플러스
+    - `GET {api url}:{minute}` -> `수` 리턴 수가 기준수 초과면 응답 거부
+- **Sliding Window**
+  - 시간에 따라 Window를 이동시켜 동적으로 요청수를 조절하는 기술
+  - **흐름**
+  
+    <img src="https://github.com/jiyongYoon/study_note/assets/98104603/a9abf2ea-df28-4b33-96f5-3aa01848345e" alt="adder" width="80%" />
+  
+    - 유저가 00:02:10(UNIXTIME=1693494130)에 요청을 한 경우
+    - `ZREMRANGEBYSCORE {api url} 0 {window로 사용될 범위의 시작시간}`: 해당 요청의 0초부터 특정시간까지의 요청 횟수를 지움
+    - `ZCARD {api url}`: 그리고 나서 요청 횟수를 count
+      - `ZADD {api url} {현재시간} {현재시간}`: 기준 수 미만이면 Response를 주고 count 추가
+      - 기준 수를 초과면 응답 거부
+     
+
+### SNS Activity Feed
+- 사용자 또는 시스템과 관련된 활동이나 업데이트를 시간순으로 정렬하여 보여주는 기능 (ex, 인스타그램이나 페이스북의 피드)
+- Fan-Out 패턴 사용
+  - 단일 데이터를 한 소스에서 여러 목적지로 동시에 전달하는 메시징 패턴
+- **흐름**
+
+  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/03fb92cd-7492-4ef9-a95c-548e09f5bc84" alt="adder" width="80%" />
+  
+  - 어떤 유저가 특정 개시물에 좋아요를 누른 경우
+    - 앱에서는 좋아요 +1 처리를 하고
+    - 특정 알고리즘을 통해 어떤 목적지에(ex, 사용자) 해당 소식을 전할지를 판단한다.
+    - 이후 판단된 목적지에 like 소식을 전달한다.
+  - 특정 유저가 로그인을 하여 본인의 피드를 볼 경우
+    - 10개씩 페이징 처리를 한다고 가정하면, `LRANGE user:2:feed 0 9`와 같이 어떤 소식을 나열할지 확인하여 Response를 보낸다.
+
+### Shopping Cart
+- 사용자가 구매를 원하는 상품을 임시로 모아두는 가상의 공간
+- 수시로 내역이 변경되고, 실제 구매로 이어지지 않을 수도 있다
+- 여러 클라이언트 (모바일, 웹 등)의 분산 처리가 발생할 수 있기 때문에, 효율적인 중복 처리가 필요하다
+- **흐름**
+
+  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/148e2a10-cecb-44ba-9390-fff1c5f4998c" alt="adder" width="60%" />
+
+  - key: 해당 유저의 장바구니 / value: 장바구니에 담은 아이템
+  - `SADD {key} {value}`: 서버에 요청이 들어오면 Redis에 해당 아이템 저장
+  - `SMEMBERS {key}`: 장바구니 목록 보기
+
+### Login Session
+- 사용자의 로그인 상태를 유지하기 위한 기술
+- Redis와 같은 외부 서버에서 세션을 관리하면 동시 로그인 제한을 할 수 있다
+- **흐름**
+  - 유저가 로그인을 하면 인증 후 세션id를 발급하여 클라이언트 쿠키에 전달
+  - `HSET {sessionId} [{key} {value}]`: Redis에 세션id를 키로 하고 필요한 정보(ex) id, 등급, 접속기기 등의 정보)를 입력
+  - `HGETALL {sessionId}`: 요청이 오는 경우 Redis에서 해당 데이터 활용
+
+### Geofencing
+- 위치를 활용하여 지도 상의 가상의 경계 또는 지리적 영역을 정의하는 기술
+  
+  <img src="https://github.com/jiyongYoon/study_note/assets/98104603/9cd4b3dc-9df5-4007-939f-02882528f75e" alt="adder" width="60%" />
+
+### Online Status
+- 사용자의 현재 상태를 표시하는 기능
+- 완벽히 실시간을 보장하지는 않으며, 수시로 변경되는 값이다.
+- **흐름**
+  - `SETBIT {key}`: 서버와의 통신기록을 남긴다
+  - `GETBIT {key}`: 로그인 상태를 확인한다
+
+### Visitors Count
+- 방문자 수를 대략적으로 추정함
+- Key를 어떻게 설정하느냐에 따라 Count 정책이 달라짐
+  - `PFADD today:users:user:1` -> 유저당 1번 방문 체크
+  - `PFADD today:users:user:1:{unixtime}` -> 유저의 초당 방문 체크
+  - `PFCOUNT today:users` -> 전체 방문자 수 체크
+
+### Unique Events
+- 동일 요청이 중복으로 처리되지 않기 위해 빠르게 해당 item이 중복인지 확인하는 방법
+- DB로도 체크가 가능하나, 메모리 DB인 레디스를 활용해 좀 더 빠르게 확인하며, DB의 부하를 줄일 수 있다.
+- **흐름**
+  - 클라이언트의 요청을 식별할 {key}값을 설정한다.
+  - Redis의 BloomFilter에 확인 후 
+    - 값이 없으면 Redis에는 기록하고 서버에서는 요청을 처리한다.
+    - 값이 있으면 처리했을 가능성이 있다는 것을 염두하여 로직을 짠다. (false positive 일수 있기 때문에)
+
+---
+
+## 9. Redis 사용 시 주의사항
+
+### O(N) 명령어
+- 대부분 명렁어는 O(1) 시간복잡도를 갖는다.
+- 단일쓰레드로 처리하기 때문에 O(N) 명령어를 수행하게 되면 성능저하가 발생한다.
+- O(N) 명령어
+  - `KEYS`: 지정된 패턴과 일치하는 모든 key 조회
+    - `SCAN` 명령어로 대체해야함
+  - `SMEMBERS`: Set의 모든 member 반환
+    - N = Set Cardinality 
+    - 모든 member를 조회해야하기 때문에 부담스러운 작업.
+    - **member가 10,000개가 넘어가면 Set을 분리하는 것이 더 낫다.**
+  - `HGETALL`: Hash의 모든 field 반환
+    - N = Size of Hash
+    - set과 마찬가지로 분리 고려 필요
+  - `SORT`: List, Set, ZSet의 item 정렬하여 반환
+
+### Thundering Herd Problem
+- 병렬 요청이 공유 자원에 대해서 접근할 때, 급격한 과부하가 발생하는 문제
+- 캐시가 만료되는 등의 상황으로 Cache miss가 발생하는 경우, 이로 인해 DB의 쿼리가 많이 발생하게 될 수 있다.
+  - Cache작업을 해놓은 이유는 해당 처리가 서버의 Resource를 많이 소모하기 때문이다.
+- 스케쥴링을 통해 캐시 만료로 인해 요청이 DB까지 가는 경우를 방지하도록 해야한다.
+
+### Stale Cache Invalidation
+- 캐시와 DB의 싱크가 안맞아서 발생하는 문제
