@@ -67,3 +67,206 @@ if (account.getState() == DELETED ||
 - ex: 회원 객체
   - 암호 변경하기 기능
   - 차단 여부 확인하기 기능
+
+### 캡슐화
+
+- 데이터 + 관련기능 묶기
+  - 객체가 기능을 어떻게 구현했는지는 외부에 감추는 것
+  - 정보 은닉 포함
+
+- **절차 지향적 코드**는
+```java
+if (acc.getMembership() == REGULAR && acc.getExpDate().isAfter(now)) {
+    ...정회원 기능
+}
+```
+해당 기능이 `이벤트로 인해 5년 이상 사용자들은 일부 기능을 정회원 혜택으로 1개월 무상 제공한다`고 수정된다면
+```java
+if (acc.getMembership() == REGULAR &&
+(
+  (acc.getServiceDate().isAfter(fiveYearAgo) && acc.getExpDate().isAfter(now())) ||
+  (acc.getServiceDate().isBefore(fiveYearAgo) && addMonth(acc.getExpDate()).isAfter(now()))
+  )
+)
+{
+    ...정회원 기능
+}
+```
+또한, 이 데이터들을 직접 사용하는 곳에는 동일한 수정이 또 필요해진다.
+
+- **객체 지향적 코드**는 해당 데이터를 `객체`에 감싸고, 프로시저가 직접 객체의 데이터에 접근하지 않고, 데이터에 접근하는 기능만 열어두어 활용하게 한다.
+```java
+public class Account {
+    private Membership membership;
+    private Date expDate;
+    
+    public boolean hasRegularPermission() {
+        return membership == REGULAR && expDate.isAfter(now());
+    }
+}
+
+// 사용처
+if (acc.hasRegularPermission()) {
+    ...정회원 기능
+}
+```
+해당 기능 수정시 `hasRegularPermission()` 메서드 내부만 변경해주면 된다.
+> 캡슐화를 하면
+> 1. 요구사항의 변화가 발생한 `객체`에만 변경이 발생하며, 해당 프로시저 및 데이터를 사용하는 코드에는 영향이 최소화 된다!!
+> 2. 캡슐화를 하면 해당 `기능에 대한 의도`를 분명하게 할 수 있다.
+
+### 캡슐화를 위한 규칙
+
+1. 데이터를 달라고 해서 내가 판단하지 말고, 해당 데이터를 가진 객체에게 처리 해달라고 하기
+
+    `if (acc.getMembership() == REGULAR) {}` -> `if (acc.hasRegularPermission()) {}`
+
+2. Demeter's Law - 인스턴스 객체, 파라미터로 받은 객체, 필드로 참조하는 객체의 메서드만 호출해라
+
+    `acc.getExpDate().isAfter(now)` -> `acc.isExpired()`
+
+### 캡슐화 연습 1
+
+```java
+public class Movie {
+    public static int REGULAR = 0;
+    public static int NEW_RELEASE = 1;
+    private int priceCode;
+    
+    public int getPriceCode() {
+        return priceCode;
+    }
+}
+
+public class Rental {
+    private Movie movie;
+    private int daysRented;
+    
+    public int getFrequentRenterPoints() {
+        if (movie.getPriceCode() == Movie.NEW_RELEASE &&
+        daysRented > 1) {
+            return 2;
+        } else {
+            return 1;
+        }
+    }
+}
+```
+- 캡슐화를 적용하면
+```java
+public class Movie {
+    public static int REGULAR = 0;
+    public static int NEW_RELEASE = 1;
+    private int priceCode;
+    
+    public int getPriceCode() {
+        return priceCode;
+    }
+    
+    // Movie 객체에 데이터를 가지고 일을 시키는 부분.
+    // 일에 필요한 데이터는 파라미터로 전달해줌!
+    public int getFrequentRenterPoints(int daysRented) {
+        if (priceCode == NEW_RELEASE &&
+        daysRented > 1) {
+            return 2;
+        } else {
+            return 1;
+        }
+    }
+}
+
+public class Rental {
+    private Movie movie;
+    private int daysRented;
+    
+    public int getFrequentRenterPoints() {
+        return movie.getFrequentRenterPoints(daysRented);
+    }
+}
+```
+
+### 캡슐화 연습 2
+
+```java
+public class Timer {
+    public long startTime;
+    public long stopTime;
+}
+
+public class Main {
+    Timer t = new Timer();
+    t.startTime = System.currentTimeMillis();
+    ...
+    t.stopTime = System.currentTimeMillis();
+    
+    log elaspedTime = t.stopTime - t.startTime;
+}
+```
+- 캡슐화를 적용하면
+```java
+public class Timer {
+    public long startTime;
+    public long stopTime;
+    
+    public void start() {
+        this.startTime = System.currentTimeMillis();
+    }
+    
+    public void stop() {
+        this.stopTime = System.currentTimeMillis();
+    }
+    
+    public long elaspedTime(TimeUnit timeUnit) {
+        switch (timeUnit) {
+            case MILLISECOND:
+                return (this.stopTime - this.startTime) * 10;
+            ...
+        }
+    }
+}
+
+public class Main {
+    Timer t = new Timer();
+    t.start();
+    ...
+    t.stop();
+    
+    log elaspedTime = t.elaspedTime(TimeUnit.MILLISECOND);
+}
+```
+
+### 캡슐화 연습 3
+
+- 어떤 데이터를 가지고 판단한 후, 조건에 만족하면 데이터를 변경하는 코드 동작 방식
+```java
+public class Main {
+    public void verifyEmail(String token) {
+        Member member = findByToken(token);
+        if (member == null) throw new BadTokenException();
+        
+        if (member.getVerificationEmailStatus() == 2) {
+            throw new AlreadyVerifiedException();
+        } else {
+            member.setVerificationEmailStatus(2);
+        }
+    }
+}
+```
+- 캡슐화를 적용하면
+```java
+public class Member {
+    private int verificationEmailStatus;
+    
+    public void verifyEmail() {
+        if (isEmailVerified()) {
+            throw new AlreadyVerifiedException();
+        } else {
+            member.setVerificationEmailStatus(2);
+        }
+    }
+    
+    public boolean isEmailVerified() {
+        return verificationEmailStatus == 2;
+    }
+}
+```
