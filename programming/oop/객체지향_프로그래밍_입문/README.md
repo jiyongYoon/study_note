@@ -270,3 +270,120 @@ public class Member {
     }
 }
 ```
+
+---
+
+## 다형성과 추상화
+
+### 다형성 (Polymorphism)
+
+- 여러 모습을 갖는 것 -> 한 객체가 여러 타입을 갖는 것.
+  - 객체지향에서는 상속을 활용해 다형성을 구현할 수 있다.
+
+### 추상화 (Abstraction)
+
+- 데이터나 프로세스 등을 의미가 비슷한 개념이나 의미있는 표현으로 정의하는 과정
+- 방법1: 특정한 성질을 이용하여 추출
+- 방법2: 공통 성질을 이용하여 추출 -> 다형성과 연관
+
+- 예시
+  - 실물세계의 단어 -> 지포스, 라데온 등등이 GPU라는 단어로 추상화됨 (방법2)
+  - DB의 테이블과 그 속성들 -> 속성들이 DB의 테이블로 추상화됨 (방법1)
+  - Java의 클래스 -> 내부 필드(email, name 등)들이 클래스(Member)로 추상화됨 (방법1)
+
+### 타입 추상화
+
+- 여러 구현 클래스를 대표하는 상위 타입을 도출하며, 흔히 `인터페이스`로 추상화 한다.
+- 추상화 클래스는 기능에 대한 의미만을 제공하며, 추상화 클래스를 상속하여 기능을 구현한다.
+
+<img src="https://github.com/jiyongYoon/study_note/assets/98104603/fcd85d40-b746-4358-b6f5-e82f070f19bc" alt="adder" width="70%" />
+
+- 추상화를 사용하는 가장 큰 이유는 `유연함`이다.
+- 아래 예시에서는 구현체를 직접 사용했을 때, 요구사항이 추가되면 나타나는 상황이다.
+```java
+// sms 발송만
+public class Main {
+    private SmsSender smsSender;
+    
+    public void cancel(String ono) {
+        // 주문 취소 처리
+        
+        sms.Sender.sendSms();
+    }
+}
+```
+
+```java
+// 카카오 푸시 발송이랑, 메일 전송도!
+public class Main {
+    private SmsSender smsSender;
+    private KakaoPush kakaoPush;
+    private MailService mailService;
+    
+    public void cancel(String ono) {
+        // 주문 취소 처리
+        
+        if (pushEnable) {
+            kakaoPush.push();
+        } else {
+            sms.Sender.sendSms();
+        }
+        mailService.sendMail();
+    }
+}
+```
+- 요구 사항 변경에 따라 주문 취소 코드가 함께 변경됨.
+
+--> 추상화를 적용한다면?
+
+- SMS전송, 카카오톡 푸시, 이메일 세 가지 기능을 `Notifier`로 추상화 적용!
+
+```java
+public class Main {
+    public void cancel(String ono) {
+        // 주문 취소 처리
+        
+        Notifier notifier = getNotifier();
+        notifier.notify();
+    }
+    
+    private Notifier getNotifier() {
+        if (pushEnable) {
+            return new KakaoNotifier();
+        } else {
+            return new SmsNotifier();
+        }
+    }
+}
+```
+
+--> 객체를 생성하는 `getNotifier()` 메서드 부분을 추상화를 한번 더 한다면 
+
+```java
+public interface NotifierFactory {
+    Notifier getNotifier();
+    
+    static NotifierFactory instance() {
+        return new DefaultNotifierFactory();
+    }
+}
+
+public class DefaultNotifierFactory implements NotifierFactory {
+    public Notifier getNotifier() {
+        if (pushEnable) {
+            return new KakaoNotifier();
+        } else {
+            return new SmsNotifier();
+        }
+    }
+}
+```
+
+- 통지 방식을 변경하게 된다면, `DefaultNotifierFactory` 부분 코드만 수정하면 된다.
+- `주문 취소 처리 로직` 자체는 변하지 않는다는 것이 핵심!
+
+> **그럼 이 좋은걸 언제 하나?**
+> 
+> 추상화는 유연함을 얻고 프로그램의 단순함을 잃는다. <br> 
+> trade-off가 존재하기 때문에, 실제 변경 및 확장이 발생할 때 추상화를 시도하는 것이 잘못된 방법으로 추상화를 하지 않으면서 <br>
+> 효율적으로 할 수 있는 시기가 되겠다!
