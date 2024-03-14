@@ -407,5 +407,86 @@ public class DefaultNotifierFactory implements NotifierFactory {
   - 필요한 기능만을 뽑아서 사용하는 것이 수월해짐
   - 상속으로 인한 단점을 보완
 
-> 진짜 하위 타입인 경우에만 상속을 사용! (is a)
+> 진짜 하위 타입인 경우에만 상속을 사용! (is a) <br>
 > 조립이 가능한지를 먼저 검토할 것!
+
+---
+
+## 기능과 책임 분리
+
+- 기능을 먼저 리스트업 하고나면, 해당 기능을 누가 제공할 것인지를 고민하는 것이 필요함
+
+<img src="https://github.com/jiyongYoon/study_note/assets/98104603/48f1fd6f-7660-49ac-b2fa-59a423827a01" alt="adder" width="70%" />
+
+  - 위 그림은 `암호 변경`이라는 목표기능을 위해 세부적으로 필요한 기능을 리스트업하고, 세부 기능들의 책임을 나눈 모습이다.
+  - 이 분배로 코드를 구현하면 아래와 같이 구현할 수 있다.
+    
+    ```java
+    public class ChangePasswordService {
+        public Result changePassword(String id, String oldPw, String newPw) {
+            Member member = memberRepository.findOne(id);
+            if (member == null) {
+                return Result.NO_MEMBER;
+            }
+            try {
+                member.changePassword(oldPw, newPw);
+                return Result.SUCCESS;
+            } catch (BadPasswordException ex) {
+                return Result.BAD_PASSWORD;
+            }
+        }
+    }
+    ```
+    - `ChangePasswordService`는 각각의 객체를 활용해서 `암호변경`이라는 기능을 완성하고 있다.
+    - 그러나 이런 조립도 클래스와 메서드가 커지게 되면 결국 절차지향적으로 변하게 된다. -> 계속해서 `책임분배/분리가 필요`한 상황인 것이다.
+    
+> **책임 분배/분리 방법**
+> 
+> 1) 패턴 적용
+> 2) 계산 기능 분리
+> 3) 외부 연동 분리
+> 4) 조건별 분기는 추상화
+
+1. 패턴 적용
+- 전형적인 역할 분리
+  - MVC 패턴, DDD, AOP, GoF 디자인 패턴, 클린 아키텍처 등
+
+2. 계산 기능 분리
+- 계산하는 작업만 클래스로 따로 분리
+
+3. 외부 연동 분리
+- 네트워크, 메시징, 파일 등의 연동 처리 클래스 분리
+
+4. 조건별 분기 추상화
+```java
+public class Main {
+    String fileUrl = "";
+    if (fileId.startWith("local:")) {
+        fileUrl = "/files/" + fileId.substring(6);
+    } else if (fileId.startWith("ss:")) {
+        fileUrl = "http://fileserver/files/" + fileId.substring(3);    
+    }
+    ...
+}
+```
+-> 추상화를 적용하면
+```java
+public class Main {
+    FileInfo fileInfo = FileInfo.getFileInfo(fileUrl);
+    String fileUrl = fileInfo.getUrl();
+}
+
+public interface FileInfo {
+    String getUrl();
+    static FileInfo getFile();
+}
+
+public class SSFileInfo implements FileInfo {
+    private String fileId;
+    
+    public String getUrl() {
+        return "http://fileserver/files/" + fileId.substring(3);
+    }
+}
+```
+
