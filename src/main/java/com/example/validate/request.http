@@ -1,0 +1,21 @@
+###
+POST http://localhost:8080/valid
+Content-Type: application/json
+
+{
+  "id": 1,
+  "email": "email",
+  "name": "",
+  "description": ""
+}
+
+###
+POST http://localhost:8080/validated
+Content-Type: application/json
+
+{
+  "id": 1,
+  "email": "email",
+  "name": "",
+  "description": ""
+}
