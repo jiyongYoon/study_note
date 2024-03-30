@@ -1,4 +1,4 @@
-package com.example.springboot;
+package com.example.springboot.mock_test;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;

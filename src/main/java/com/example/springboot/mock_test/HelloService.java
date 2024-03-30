@@ -1,4 +1,4 @@
-package com.example.springboot;
+package com.example.springboot.mock_test;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.example.springboot;
+package com.example.springboot.mock_test;
 
 import static org.mockito.ArgumentMatchers.any;
 
@@ -27,19 +27,17 @@ public class HelloServiceSpyTest {
     void spyTest() {
         // given
         String clientMockData = "HelloClient Mock 데이터";
-        String methodMockData = "HelloRepository findById Mock 데이터";
+        String methodData = "HelloRepository findById 데이터";
         BDDMockito.given(helloClient.getData())
             .willReturn(clientMockData);
-        BDDMockito.given(helloRepository.findById(any()))
-            .willReturn(methodMockData);
 
         // when
         String saveData = helloService.save();
 
-        String findData = helloRepository.findById(clientMockData);
+        String findData = helloRepository.findById(methodData);
 
         // then
         Assertions.assertThat(saveData).isEqualTo(clientMockData);
-        Assertions.assertThat(findData).isEqualTo(methodMockData);
+        Assertions.assertThat(findData).isEqualTo(methodData);
     }
 }
