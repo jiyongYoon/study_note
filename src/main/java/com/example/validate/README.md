@@ -192,7 +192,202 @@ Springboot 어플리케이션에서는 모든 요청은 프론트 컨트롤러�
   ...
   ```
   
+# 커스텀 어노테이션으로 직접 유효성 검사하기
 
+- 기본 커스텀이 아닌 비즈니스로직에 관련되거나 커스텀한 파라미터 검증을 하고 싶을때 사용
+- Validator 클래스(실제 검증로직이 들어갈)는 `JSR`에서 제공하는 `javax.validation`의 `ConstraintValidator` 인터페이스를 구현해야함
+- Controller 클래스에서 `@Valid`, `@Validated` 모두 적용되지만, 그룹 설정을 하려면 `@Validated` 어노테이션을 사용해야함.
+
+### 예시
+
+- Validate 어노테이션
+  ```java
+  @Target({ElementType.FIELD})
+  @Retention(RetentionPolicy.RUNTIME)
+  @Constraint(validatedBy = PasswordValidator.class) // 어떤 클래스를 사용해서 검증 할지
+  @Documented
+  public @interface Password {
+  
+      String message() default "패스워드 형태가 올바르지 않습니다."; // 검증 실패 시 반환할 메시지
+  
+      Class<?>[] groups() default {}; // 유효성 검증이 진행될 그룹
+  
+      Class<? extends Payload>[] payload() default {}; // 유효성 검증 시 전달할 메타 정보
+  }
+  ```
+
+- Validator 검증 클래스
+  ```java
+  @Slf4j
+  public class PasswordValidator implements ConstraintValidator<Password, Object> {
+  
+      /**
+       * 초기화하기 위한 메서드. 검증 로직이 동작하면 맨 먼저 해당 메서드를 통해 필요한 정보를 초기화한다.
+       * 즉, 검증로직이 동작할때마다 해당 객체는 생성되었다가 사라지게 된다.
+       * @param constraintAnnotation annotation instance for a given constraint declaration
+       */
+      @Override
+      public void initialize(Password constraintAnnotation) {
+          ConstraintValidator.super.initialize(constraintAnnotation);
+      }
+  
+      /**
+       * 실제 유효성을 검증하는 메서드. 클래스의 제네릭에 따라 타입을 지정해서 받을 수 있다.
+       * @param value object to validate
+       * @param context context in which the constraint is evaluated
+       *
+       * @return
+       */
+      @Override
+      public boolean isValid(Object value, ConstraintValidatorContext context) {
+          String password = String.valueOf(value);
+  
+          boolean hasLetter = false;
+          boolean hasDigit = false;
+          boolean hasSpecialChar = false;
+  
+          for (char c : password.toCharArray()) {
+              if (Character.isLetter(c)) {
+                  hasLetter = true;
+              } else if (Character.isDigit(c)) {
+                  hasDigit = true;
+              } else if (!Character.isWhitespace(c)) { // 공백 제외한 다른 특수문자
+                  hasSpecialChar = true;
+              }
+          }
+  
+          int includeCount = 0;
+          if (hasLetter) includeCount++;
+          if (hasDigit) includeCount++;
+          if (hasSpecialChar) includeCount++;
+  
+          log.info(
+                  "password valid, hasLatter={}, hasDigit={}, hasSpecialChar={}, includeCount={}",
+                  hasLetter,
+                  hasDigit,
+                  hasSpecialChar,
+                  includeCount);
+  
+          return includeCount >= 2;
+      }
+  }
+  ```
+
+- group 지정을 할 인터페이스 (선택사항)
+  ```java
+  public interface Create extends Default {}
+  ```
+  - 가독성이 떨어진다는 단점이 있어 생각해보고 적용할 것.
+  - 동일한 DTO를 사용하려면 사용하고, 그렇지 않다면 DTO를 분리하여 검증하는 것이 방법이 될 것.
+
+- Dto
+  ```java
+  @Getter
+  @ToString
+  public class CreateDto {
+  
+      @Null
+      private Long id;
+  
+      @Email
+      private String email;
+  
+      @Size(min = 5)
+      @Password(groups = Create.class)
+      private String password;
+  
+      @NotBlank
+      private String name;
+  
+      private String description;
+  
+  }
+  ```
+
+- Controller
+  ```java
+  @RestController
+  @RequestMapping
+  @RequiredArgsConstructor
+  public class ValidateController {
+  
+      private final ValidateService validateService;
+  
+      @PostMapping("/valid")
+      public CreateDto valid(@Valid @RequestBody CreateDto createDto) {
+          System.out.println("controller = " + createDto);
+          return createDto;
+      }
+  
+      @PostMapping("/validated")
+      public CreateDto validate(@RequestBody CreateDto createDto) {
+          System.out.println("controller = " + createDto);
+          return validateService.validate(createDto);
+      }
+  
+      @PostMapping("/validated/group")
+      public CreateDto validGroup(@Validated(Create.class) @RequestBody CreateDto createDto) {
+          System.out.println("controller = " + createDto);
+          return createDto;
+      }
+  }
+  ```
+  
+- Request (그룹 적용 예시1)
+  ```java
+  ### 커스텀 validation group 적용
+  POST http://localhost:8080/validated/group
+  Content-Type: application/json
+  
+  {
+    "email": "email@email",
+    "name": "hello",
+    "password": "123",
+    "description": ""
+  }
+  ```
+  - `@Size` 와 `@Password` 두 어노테이션 모두 동작
+  - Log
+    ```text
+    Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [0] in public com.example.validate.CreateDto com.example.validate.ValidateController.validGroup(com.example.validate.CreateDto) with 2 errors: 
+    [Field error in object 'createDto' on field 'password': rejected value [123]; codes [Size.createDto.password,Size.password,Size.java.lang.String,Size]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [createDto.password,password]; arguments []; default message [password],2147483647,5]; default message [크기가 5에서 2147483647 사이여야 합니다]] 
+    [Field error in object 'createDto' on field 'password': rejected value [123]; codes [Password.createDto.password,Password.password,Password.java.lang.String,Password]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [createDto.password,password]; arguments []; default message [password]]; default message [패스워드 형태가 올바르지 않습니다.]] ]
+    ```
+  
+- Request (그룹 적용 예시2)
+  ```java
+  ### 커스텀 validation group 적용
+  POST http://localhost:8080/validated/group
+  Content-Type: application/json
+  
+  {
+    "email": "email@email",
+    "name": "hello",
+    "password": "123!",
+    "description": ""
+  }
+  ```
+  - `@Size` 와 `@Password` 두 어노테이션 모두 동작하지만, `@Size`만 걸림 
+  - Log
+    ```text
+    Resolved [org.springframework.web.bind.MethodArgumentNotValidException: Validation failed for argument [0] in public com.example.validate.CreateDto com.example.validate.ValidateController.validGroup(com.example.validate.CreateDto): 
+    [Field error in object 'createDto' on field 'password': rejected value [123!]; codes [Size.createDto.password,Size.password,Size.java.lang.String,Size]; arguments [org.springframework.context.support.DefaultMessageSourceResolvable: codes [createDto.password,password]; arguments []; default message [password],2147483647,5]; default message [크기가 5에서 2147483647 사이여야 합니다]] ]
+    ```
+
+- Request (그룹 적용 안한 예시)
+  ```text
+  ### 커스텀 validation
+  POST http://localhost:8080/valid
+  Content-Type: application/json
+  
+  {
+  "email": "email@email",
+  "name": "hello",
+  "description": ""
+  }
+  ```
+  - 통과함.
+  - Controller의 `@Validate(Create.class)` 가 없기 때문에, `@Password` 검증이 적용되지 않음
 
 ### 참고자료
 

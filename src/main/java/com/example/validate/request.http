@@ -19,3 +19,34 @@ Content-Type: application/json
   "name": "",
   "description": ""
 }
+
+### 커스텀 validation
+POST http://localhost:8080/valid
+Content-Type: application/json
+
+{
+  "email": "email@email",
+  "name": "hello",
+  "description": ""
+}
+
+### 커스텀 validation
+POST http://localhost:8080/validated
+Content-Type: application/json
+
+{
+  "email": "email@email",
+  "name": "hello",
+  "description": ""
+}
+
+### 커스텀 validation group 적용
+POST http://localhost:8080/validated/group
+Content-Type: application/json
+
+{
+  "email": "email@email",
+  "name": "hello",
+  "password": "123!",
+  "description": ""
+}

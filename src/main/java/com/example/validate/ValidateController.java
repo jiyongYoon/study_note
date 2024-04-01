@@ -1,6 +1,8 @@
 package com.example.validate;
 
+import com.example.validate.custom.Create;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,4 +29,9 @@ public class ValidateController {
         return validateService.validate(createDto);
     }
 
+    @PostMapping("/validated/group")
+    public CreateDto validGroup(@Validated(Create.class) @RequestBody CreateDto createDto) {
+        System.out.println("controller = " + createDto);
+        return createDto;
+    }
 }
