@@ -1,4 +1,4 @@
-package java_spring.lambda;
+package com.example.java.lambda;
 
 import java.util.Scanner;
 

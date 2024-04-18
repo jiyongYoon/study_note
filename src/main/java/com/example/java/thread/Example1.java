@@ -1,4 +1,4 @@
-package java_spring.thread;
+package com.example.java.thread;
 
 import java.util.ArrayList;
 import java.util.List;

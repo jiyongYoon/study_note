@@ -1,4 +1,4 @@
-package java_spring.thread;
+package com.example.java.thread;
 
 public class ThreadException {
 
