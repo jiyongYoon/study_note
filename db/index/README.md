@@ -35,6 +35,7 @@ WHERE first_name = 'Minsoo';
     ```
   
 ### index 생성문
+
 - 테이블에 데이터가 있는 경우
   ```sql
   1. 중복이 가능한 단일 컬럼 index를 만드는 경우
@@ -60,7 +61,7 @@ WHERE first_name = 'Minsoo';
   );  // 인덱스 이름은 생략 가능
   ```
 
-- Primary Key의 경우는 대부분의 RDB에서 pk값 index가 자동 생성된다.
+- Primary Key의 경우는 대부분의 RDB에서 pk값 index가 자동 생성된다. => `클러스터링 인덱스`라고도 한다.
 
 ### index 확인문
 
@@ -69,6 +70,84 @@ SHOW INDEX FROM player;
 ```
 
 <img src="https://github.com/jiyongYoon/study_cs_note/assets/98104603/6d879c67-40ae-4730-95bd-49e2ff8d1bdb" alt="adder" width="60%" />
+
+### Unique
+
+- 제약조건.
+- 자동으로 인덱스가 생성된다. => `고유인덱스`라고도 한다.
+
+```sql
+CREATE TABLE book (
+    id int auto_increment primary key ,
+    name varchar(100) UNIQUE
+);
+```
+
+```sql
+SHOW INDEX FROM book;
+```
+
+<img src="https://github.com/user-attachments/assets/2cedff3f-d635-48c2-8d34-de356dba28a5" alt="adder" width="100%" />
+
+### 멀티 컬럼 인덱스
+
+- 두 컬럼을 함께 인덱스로 만드는 것.
+- 첫번째 -> 두번째 순서로 정렬이 된다.
+- 두개 이상도 가능하다.
+
+```sql
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    이름 VARCHAR(100),
+    부서 VARCHAR(100),
+    나이 INT
+);
+
+CREATE INDEX idx_부서_이름 ON users(부서, 이름);
+```
+
+```sql
+SHOW INDEX FROM users;
+```
+
+<img src="https://github.com/user-attachments/assets/8affc227-ba26-465c-81c6-45737d207584" alt="adder" width="60%" />
+
+해당 멀티 컬럼 인덱스는 아래와 같은 sql문에서 잘 사용될 수 있다.
+```sql
+SELECT * FROM users
+WHERE 부서 = '인사'
+ORDER BY 이름;
+```
+테이블에는 이미 1) 부서, 2) 이름 순으로 정렬이 되어 있다.
+WHERE 조건으로 부서가 '인사'인 사람들을 먼저 추린 후 (이미 정렬되어 있으므로 범위로 한번에 불러올 수 있음),
+이름으로 정렬을 해야하는데, 이미 이름으로 정렬이 되어 있기 때문이다.
+
+> **멀티컬럼 인덱스 사용시 주의할 점!!**
+> 
+> ```sql
+> CREATE INDEX idx_부서_이름 ON users(부서, 이름);
+> ```
+> 
+> 멀티컬럼 인덱스를 사용하면 `첫번째 인덱스는 일반 인덱스`처럼도 사용이 가능하다. <br> 
+> 첫 인덱스로 먼저 정렬되어 있기 때문에 첫 인덱스의 조건으로 먼저 검색을 하게 되면 사용이 가능하다.
+> ```sql
+> SELECT * FROM users WHERE 부서 = '인사';
+> ```
+> 단, `두번째 인덱스는 일반 인덱스로 사용이 불가능`하다. <br>
+> ```sql
+> SELECT * FROM user WHERE 이름 = '철수';
+> ```
+> 따라서 **순서를 신경**써야 한다.
+> 
+> 일반적으로는 `대분류 -> 중분류 -> 소분류` 순으로 컬럼을 구성하는 것이 좋다.
+> 데이터 중복도가 높은 컬럼이 큰 분류인 경우가 대부분이다.
+> 
+> ```sql
+> -- BETTER
+> CREATE INDEX index_부서_이름 ON users(부서, 이름);
+> -- WORSE
+> CREATE INDEX index_이름_부서 ON users(이름, 부서);
+> ```
 
 ### index 동작 확인
 
@@ -121,6 +200,8 @@ SELECT * FROM player FORCE INDEX {인덱스명} WHERE backnumber = 7; -> 강력�
 2. index를 위한 추가적인 저장 공간 차지
 
 ## Covering index
+
+- 인덱스 테이블만으로 결과값 도출이 가능한 상황.
 
 ```sql
 CREATE INDEX ON player (team_id, backnumber);
