@@ -2,7 +2,7 @@
 
 ---
 
-## 예제 1
+## 예제 1. Where 조건 SQL 튜닝
 
 ```sql
 CREATE TABLE users (
@@ -177,9 +177,9 @@ CREATE INDEX idx_created_at ON users (created_at);
 
 ---
 
-## 예제 2
+## 예제 2. 인덱스가 예상대로 사용되지 않는 경우
 
-### 인덱스가 예상대로 사용되지 않는 경우 1
+### 인덱스가 있어도 Full Table Scan으로 진행되는 경우
 
 ```sql
 CREATE INDEX idx_name ON users (name);
@@ -201,7 +201,7 @@ EXPLAIN SELECT * FROM users
 
 <img src="https://github.com/user-attachments/assets/37513a56-9cb0-48d0-b115-3f8fbafcc3a6" alt="adder" width="100%" />
 
-### 인덱스가 예상대로 사용되지 않는 경우 2
+### 인덱스가 걸려있는 컬럼을 가공했을 경우
 
 ```sql
 CREATE INDEX idx_name ON users (name);
@@ -241,3 +241,156 @@ EXPLAIN SELECT * FROM users
 ```
 
 <img src="https://github.com/user-attachments/assets/450fc4e0-8f3d-484a-8c4a-f1fd2d8c5e2c" alt="adder" width="80%" />
+
+---
+
+## 예제 3. Where과 Order by 가 동시에 있는 SQL 튜닝 
+
+```sql
+SELECT * FROM users
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 3 DAY)
+          AND department = 'Sales'
+        ORDER BY salary
+        LIMIT 100;
+```
+
+### 1. 인덱스 없이 조회
+
+- 시간: 230ms
+- 스캔타입: ALL (Full Table Scan)
+- Analyze
+  ```text
+   -> Limit: 100 row(s)  (cost=93924 rows=100) (actual time=224..224 rows=100 loops=1)
+       -> Sort: users.salary, limit input to 100 row(s) per chunk  (cost=93924 rows=996636) (actual time=224..224 rows=100 loops=1)
+           -> Filter: ((users.department = 'Sales') and (users.created_at >= <cache>((now() - interval 3 day))))  (cost=93924 rows=996636) (actual time=6.61..224 rows=104 loops=1)
+               -> Table scan on users  (cost=93924 rows=996636) (actual time=0.0498..175 rows=1e+6 loops=1)
+  ```
+   먼저 Full Table Scan 후 조건에 맞는 데이터를 필터링, 그리고 정렬 조건에 맞게 정렬 후 상위 100개만 가져옴. 모든 작업을 그대로 진행함.
+
+### 2. where 조건 (created_at) 인덱스 추가
+
+```sql
+CREATE INDEX idx_created_at ON users(created_at);
+```
+
+- 시간: 40ms
+- 스캔타입: range (Inedex Range Scan)
+- Analyze
+   ```text
+   -> Limit: 100 row(s)  (cost=490 rows=100) (actual time=3.19..3.2 rows=100 loops=1)
+       -> Sort: users.salary, limit input to 100 row(s) per chunk  (cost=490 rows=1089) (actual time=3.19..3.2 rows=100 loops=1)
+           -> Filter: (users.department = 'Sales')  (cost=490 rows=1089) (actual time=0.0997..3.15 rows=104 loops=1)
+               -> Index range scan on users using idx_created_at over ('2024-08-08 00:10:52' <= created_at), with index condition: (users.created_at >= <cache>((now() - interval 3 day)))  (cost=490 rows=1089) (actual time=0.0233..3.1 rows=1089 loops=1)
+   ```
+   Index range sacn을 활용하여 created_at 조건에 맞는 데이터를 먼저 찾은 후, 나머지 Where 조건(department) 필터링을 하고, Order by 조건(salary)으로 정렬 후 상위 100개를 리턴함.
+
+### 3. order by 조건 (salary) 인덱스 추가
+
+```sql
+CREATE INDEX idx_salary ON users(salary);
+```
+
+- 시간: 1676ms
+- 스캔타입: index (Index Full Scan)
+- Analyze
+   ```text
+   -> Limit: 100 row(s)  (cost=9.09 rows=3.33) (actual time=6.79..1380 rows=100 loops=1)
+       -> Filter: ((users.department = 'Sales') and (users.created_at >= <cache>((now() - interval 3 day))))  (cost=9.09 rows=3.33) (actual time=6.79..1380 rows=100 loops=1)
+           -> Index scan on users using idx_salary  (cost=9.09 rows=100) (actual time=0.543..1333 rows=977030 loops=1)
+   ```
+   Index Full Scan을 사용해 데이터에 접근 후, Where조건으로 필터링, 그리고 상위 100개를 리턴함.
+
+### 4. 원인 분석
+
+`order by` 조건에 Index를 걸었을 때, 분명 Index Full Scan을 사용했지만 그냥 Full Table Scan보다 성능이 더 안나왔다. 
+Analyze를 보면 인덱스 스켄에 1333ms의 가장 긴 시간을 소요했는데, 그 이유는 `idx_salary` 테이블에는 `id`와 `salary` 값 밖에 없어서 필터링을 하기 위해 매번 실제 데이터가 있는 테이블에 접근을 해야하기 때문이다.
+따라서 그냥 Full Scan보다 오버헤드가 많았던 것이다.
+
+> 인덱스를 사용하여 SQL을 튜닝하는 경우, `최초 접근하는 데이터`의 양을 줄이는 것이 매우 중요하다.
+> 그렇게 최초에 접근한 데이터의 양이 적으면 그 이후에는 어떤 작업을 해도 수월하기 때문이다!!
+
+---
+
+## 예제 4. Having 문이 사용된 SQL문 튜닝
+
+```sql
+SELECT age, MAX(salary) FROM users
+    GROUP BY age
+    HAVING age >= 20 AND age < 30;
+```
+
+### 1) 인덱스 없이 조회
+
+- 시간: 243ms
+- 스캔타입: ALL (Full Table Scan)
+- Analyze
+   ```text
+   -> Filter: ((users.age >= 20) and (users.age < 30))  (actual time=236..236 rows=10 loops=1)
+       -> Table scan on <temporary>  (actual time=236..236 rows=100 loops=1)
+           -> Aggregate using temporary table  (actual time=236..236 rows=100 loops=1)
+               -> Table scan on users  (cost=100624 rows=996389) (actual time=0.0542..133 rows=1e+6 loops=1)
+   ```
+
+### 2) age 인덱스 생성 후 조회
+
+```sql
+CREATE INDEX idx_age ON users (age);
+```
+
+- 시간: 1365ms
+- 스캔타입: index (Index Full Scan)
+- Analyze
+   ```text
+   -> Filter: ((users.age >= 20) and (users.age < 30))  (cost=200263 rows=101) (actual time=276..1346 rows=10 loops=1)
+       -> Group aggregate: max(users.salary)  (cost=200263 rows=101) (actual time=17.8..1346 rows=100 loops=1)
+           -> Index scan on users using idx_age  (cost=100624 rows=996389) (actual time=0.34..1316 rows=1e+6 loops=1)
+   ```
+  
+   Index Full Scan 후 그룹핑을 먼저 하고, 그룹핑 된 데이터에서 필터링을 진행한다.
+   idx_age 테이블만으로는 salary 값을 알 수 없기 때문에 `1316ms`의 시간을 사용해 실제 데이터 테이블까지 접근하여 salary 값을 가져왔기 때문에 오버헤드가 더 발생함.
+
+### 3) age & salary 멀티 컬럼 인덱스 생성 후 조회
+
+```sql
+CREATE INDEX idx_age_salary ON users (age, salary);
+```
+
+- 시간: 30ms
+- 스캔타입: range (Index Range Scan)
+- Analyze
+   ```text
+   -> Filter: ((users.age >= 20) and (users.age < 30))  (cost=138 rows=102) (actual time=0.116..0.437 rows=10 loops=1)
+       -> Covering index skip scan for grouping on users using idx_age_salary  (cost=138 rows=102) (actual time=0.0396..0.427 rows=100 loops=1)
+   ```
+   
+   idx_age_salary 에는 리턴에 필요한 값이 모두 들어있다. 따라서 `커버링 인덱스`가 되므로 실제 데이터 테이블에 접근하지 않고 바로 데이터를 모두 가져올 수 있다.
+   또, age가 1번, salary가 2번 인덱스이므로 age에서 범위 스켄이 가능하며, 범위 스캔을 하면서 바로 salary 값을 볼 수 있기 때문에 커버링이 가능하고, 성능이 빠른 것이다.
+
+### 4) SQL 변경
+
+2번에서 생성한 `age` 인덱스는 범위 스캔을 위해 필요해보인다. 그러나, MAX 값을 위해 `salary` 까지 멀티 컬럼 인덱스로 추가해야할까?
+인덱스는 최소화 하는 것이 무조건 좋기 때문에, age 인덱스만 살려보자.
+  
+2번에서의 속도의 문제점은 처음 Index Full Scan 시 1) `모든 데이터에 접근`하기 때문에 최초 접근 데이터가 많았으며, 2) 모든 데이터의 `salary` 값까지 알아야 했기 때문에 오버헤드가 더 발생했다.
+`GROUP BY`와 `HAVING ON`은 그룹핑을 한 후 Having 조건으로 데이터를 추린다. <br>
+_**어차피 우리는 `age >= 20 AND age < 30`인 데이터만 필요하기 때문에, 최초 접근 조건에 이 내용을 반영하면 age 인덱스만으로 쿼리 성능을 대폭 향상 시킬 수 있을 것이다.**_
+
+```sql
+SELECT age, MAX(salary) FROM users
+    WHERE age >= 20 AND age < 30
+    GROUP BY age;
+```
+
+- 시간: 30ms
+- 스캔타입: range (Index Range Scan)
+- Analyze
+```text
+-> Group aggregate: max(users.salary)  (cost=103891 rows=101) (actual time=21.8..160 rows=10 loops=1)
+    -> Index range scan on users using idx_age over (20 <= age < 30), with index condition: ((users.age >= 20) and (users.age < 30))  (cost=85002 rows=188892) (actual time=0.0251..156 rows=100214 loops=1)
+```
+
+Index Range Scan을 하게 되었다. 애초에 `20 <= age < 30` 이 범위에 해당하는 데이터만 Index를 활용해 범위 검색을 한 것이다.
+이 후에 그룹핑을 하여 집계함수를 동작하면 최초 접근 데이터가 `996389` -> `188892`개로 줄어든 것을 볼 수 있다.
+
+> GROUP BY 이후 처리되는 `HAVING` 에 있는 조건을 `WHERE` 절에 사용할 수 있는지 확인하자. <br>
+> (HAVING을 쓸 수 밖에 없는 경우도 존재한다)
