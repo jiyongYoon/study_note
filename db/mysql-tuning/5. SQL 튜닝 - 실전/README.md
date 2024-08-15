@@ -472,12 +472,124 @@ CREATE INDEX idx_st_name ON students(name);
 
 - Analyze
 
-```text
--> Filter: (??? = 100)  (actual time=830..843 rows=1019 loops=1)
-    -> Table scan on <temporary>  (actual time=830..837 rows=94087 loops=1)
-        -> Aggregate using temporary table  (actual time=830..830 rows=94087 loops=1)
-            -> Nested loop inner join  (cost=106082 rows=9974) (actual time=0.0505..730 rows=100348 loops=1)
-                -> Filter: ((sc.semester = 1) and (sc.`year` = 2024) and (sc.student_id is not null))  (cost=100473 rows=9974) (actual time=0.0376..211 rows=100348 loops=1)
-                    -> Table scan on sc  (cost=100473 rows=997442) (actual time=0.0345..170 rows=1e+6 loops=1)
-                -> Single-row index lookup on st using PRIMARY (student_id=sc.student_id)  (cost=0.462 rows=1) (actual time=0.00503..0.00506 rows=1 loops=100348)
+  ```text
+  -> Filter: (??? = 100)  (actual time=830..843 rows=1019 loops=1)
+      -> Table scan on <temporary>  (actual time=830..837 rows=94087 loops=1)
+          -> Aggregate using temporary table  (actual time=830..830 rows=94087 loops=1)
+              -> Nested loop inner join  (cost=106082 rows=9974) (actual time=0.0505..730 rows=100348 loops=1)
+                  -> Filter: ((sc.semester = 1) and (sc.`year` = 2024) and (sc.student_id is not null))  (cost=100473 rows=9974) (actual time=0.0376..211 rows=100348 loops=1)
+                      -> Table scan on sc  (cost=100473 rows=997442) (actual time=0.0345..170 rows=1e+6 loops=1)
+                  -> Single-row index lookup on st using PRIMARY (student_id=sc.student_id)  (cost=0.462 rows=1) (actual time=0.00503..0.00506 rows=1 loops=100348)
+  ```
+
+---
+
+## 좋아요 많은 순으로 게시글 조회
+
+```sql
+CREATE TABLE posts (
+                     id INT AUTO_INCREMENT PRIMARY KEY,
+                     title VARCHAR(255) NOT NULL,
+                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE users (
+                     id INT AUTO_INCREMENT PRIMARY KEY,
+                     name VARCHAR(50) NOT NULL,
+                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE likes (
+                     id INT AUTO_INCREMENT PRIMARY KEY,
+                     post_id INT,
+                     user_id INT,
+                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                     FOREIGN KEY (post_id) REFERENCES posts(id),
+                     FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+SELECT
+    p.id,
+    p.title,
+    p.created_at,
+    COUNT(l.id) AS like_count
+FROM
+    posts p
+INNER JOIN
+    likes l ON p.id = l.post_id
+GROUP BY
+    p.id, p.title, p.created_at
+ORDER BY
+    like_count DESC
+LIMIT 30;
 ```
+
+### 개선 전
+
+- 시간: 3721ms
+- Explain
+
+  <img src="https://github.com/user-attachments/assets/3817f57a-1101-4964-8846-d0b878fdf401" alt="adder" width="100%" />
+
+- Analyze
+
+  ```text
+  -> Limit: 30 row(s)  (actual time=3879..3879 rows=30 loops=1)
+      -> Sort: like_count DESC, limit input to 30 row(s) per chunk  (actual time=3879..3879 rows=30 loops=1)
+          -> Table scan on <temporary>  (actual time=3767..3850 rows=600335 loops=1)
+              -> Aggregate using temporary table  (actual time=3767..3767 rows=600334 loops=1)
+                  -> Nested loop inner join  (cost=449599 rows=997632) (actual time=0.0539..1582 rows=1e+6 loops=1)
+                      -> Table scan on p  (cost=100428 rows=997632) (actual time=0.0378..153 rows=1e+6 loops=1)
+                      -> Covering index lookup on l using post_id (post_id=p.id)  (cost=0.25 rows=1) (actual time=0.00112..0.00131 rows=1 loops=1e+6)
+  ```
+  
+- 해석 및 개선
+  - 베이스 테이블을 Full Table Scan 하고, join을 한 후, 그룹팡, 정렬, Limit 작업을 순차적으로 진행한다.
+  - count를 해야하기 때문에 likes 테이블은 전체 데이터를 접근해야 하긴 하는데... 미리 그룹핑, 정렬, Limit을 해서 데이터를 가져온 후 join 할 수도 있겠다는 생각이 든다.
+
+### 개선 후 (likes 테이블에 먼저 GROUP BY, ORDER BY, LIMIT 적용)
+
+```sql
+SELECT
+    p.id,
+    p.title,
+    p.created_at,
+    l.like_count AS like_count
+FROM
+    posts p
+        INNER JOIN
+            (
+                SELECT post_id, COUNT(id) AS like_count
+                FROM likes
+                GROUP BY post_id
+                ORDER BY like_count DESC
+                LIMIT 30
+            ) as l ON p.id = l.post_id
+GROUP BY p.id, p.title, p.created_at;
+```
+
+- 시간: 188ms
+- Explain
+
+  <img src="https://github.com/user-attachments/assets/e15e6c36-9a19-4937-8dde-12252f210635" alt="adder" width="100%" />
+
+- Analyze
+
+  ```text
+  -> Table scan on <temporary>  (cost=19.5..22.2 rows=30) (actual time=219..219 rows=30 loops=1)
+      -> Temporary table with deduplication  (cost=19.4..19.4 rows=30) (actual time=219..219 rows=30 loops=1)
+          -> Nested loop inner join  (cost=16.4 rows=30) (actual time=219..219 rows=30 loops=1)
+              -> Filter: (l.post_id is not null)  (cost=0.196..5.88 rows=30) (actual time=219..219 rows=30 loops=1)
+                  -> Table scan on l  (cost=2.5..2.5 rows=0) (actual time=219..219 rows=30 loops=1)
+                      -> Materialize  (cost=0..0 rows=0) (actual time=219..219 rows=30 loops=1)
+                          -> Limit: 30 row(s)  (actual time=219..219 rows=30 loops=1)
+                              -> Sort: like_count DESC, limit input to 30 row(s) per chunk  (actual time=219..219 rows=30 loops=1)
+                                  -> Stream results  (cost=201866 rows=998298) (actual time=0.0461..189 rows=600335 loops=1)
+                                      -> Group aggregate: count(likes.id)  (cost=201866 rows=998298) (actual time=0.0444..155 rows=600335 loops=1)
+                                          -> Covering index scan on likes using post_id  (cost=102036 rows=998298) (actual time=0.0416..106 rows=1e+6 loops=1)
+              -> Single-row index lookup on p using PRIMARY (id=l.post_id)  (cost=0.253 rows=1) (actual time=0.00438..0.00439 rows=1 loops=30)
+  ```
+  
+- 해석
+  - 의도대로 먼저 그룹핑, 정렬, 그리고 Limit을 진행하니 likes 테이블에서는 전체 데이터를 scan 하지만 이후 Join 테이블에서 30개의 행으로 작업을 진행한다.
+  - 그리고 실행계획을 살펴보니 post_id를 통해 최초 테이블도 Covering Index Scan으로 진행하기 때문에 더욱 유리하다. 특별히 더 개선할 것이 없다고 생각이 된다.
