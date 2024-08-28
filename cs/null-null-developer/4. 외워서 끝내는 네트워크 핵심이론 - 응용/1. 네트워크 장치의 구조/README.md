@@ -27,8 +27,17 @@
 - 패킷을 읽고 인지만 하는 장치 -> 분석, 탐지의 목적
 - 대표적인 장치: 여러가지 Sensor
   - 패킷 수집장치가 필요함
-    - L2 Port Mirroring: 다른 포트 하나로 데이터를 모두 복사해서 전달함
-    - Tab 스위치: 
+    - L2 Port Mirroring: 데이터가 들어오는 포트 외에 다른 포트 한 곳으로 데이터를 모두 복사해서 전달함
+    - Tab 스위치: 수집만 전문적으로 하는 장치(복사 부하가 많기 때문에). 여러개의 포트로 동시에 복사가 가능함 
+    - 국가에서 지정해놓은 차단 사이트에 접속 시 차단이 되는 경우가 이런 Sensing을 통해서 차단을 하게 됨
+    - Packet을 뜯어보면
+      
+      <img src="https://github.com/user-attachments/assets/b4bb166d-876c-439a-80a0-fc2fb2d93844" alt="adder" width="70%" />
+      
+      - IP + TCP + HTTP + Data 로 구성되어 있을텐데, 우리나라는 ISP에서 HTTP를 보는 행위(SPI)까지 허용이 되어있다. Data를 보는 행위(DPI)는 안된다.
+  - 패킷을 수집하면 저장을 해두었다가 나중에 분석 및 탐지를 할텐데, 이 때 Network로 들어오는 데이터 속도보다 HDD, SDD 등의 쓰기 속도는 현저히 느리다.
+    - 이 부분에서 손실없이 수집하고 저장하는 것이 굉장히 고도화된 기술이다.
+    - 대부분은 어느정도 비율의 손실과 가격의 적정선을 타협하는 수준이다.
 
 ### Proxy
 - `Socket Stream` + Filtering
@@ -36,3 +45,14 @@
 - (User mode의) Application 레벨에 있으며 그렇기 때문에 Kernel mode의 Packet이 전처리 된 후 Socket을 통해 올라오게 된 상태다.
 - OSI 5~7 계층을 커버하게 됨
   - HTTP는 L7 레벨이기 때문에 Proxy에서 다루는 것이 유리하다는 뜻이 된다.
+  
+  <img src="https://github.com/user-attachments/assets/48ec9c35-5874-44e1-91ba-af8fd968bf44" alt="adder" width="80%" />
+
+- **클라이언트 관점** 
+  - `Forward Proxy` (public 망 앞)
+  - 프록시를 통해 우회를 하는 경우도 생기지만, `이 구조`를 사용해서 보호와 감시 용도로 사용할 수도 있다.
+  - 특정 서버(혹은 외부 Public Internet 등)에 접속하기 위해서는 `특정 IP`만 가능하게 하도록 하면 이 `특정 IP`를 가진 서버가 프록시 서버가 되는 것이다.
+
+- **서버 관점** 
+  - `Reverse Proxy` (public 망 뒤)
+  - 서버와 public 망 사이에서 보통 '서버를 보호하기 위한 전처리 및 로드밸런싱 등' 목적으로 사용할 수도 있다.
