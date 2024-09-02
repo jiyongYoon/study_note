@@ -40,3 +40,47 @@
 
   > 이러한 과정으로 하나의 Global IP(Public IP)로 공유기 내부에 있는 여러 호스트들이 통신이 가능해진다.
   
+### Full Cone NAT
+
+- 사설망 내의 Host(Local ip address + Local port) 와 공유기(NAT)간에 NAT table에는 데이터가 그대로 추가된다.
+- 하지만 Outbound 쪽으로는 Remote ip address나 Remote port는 매핑이 없다. (Any ip, port 가능)
+- Table로 표시하면 아래와 같다.
+  
+  <img src="https://github.com/user-attachments/assets/739d870c-ded3-4f5c-96ae-7431955ce92c" alt="adder" width="60%" />
+  
+  - 이러한 바인딩 상태에서 Public에서는 공유기 ip address + port(8080) 으로 보내게 되면, 바로 `192.168.0.10:3000`으로 연결되게 된다.
+  - 데이터를 받는 Host에서 어디서 오는지 Remote를 따로 식별하지 않기 때문이다.
+- 구조상 외부에서의 연결성이 훨씬 편리하다. 
+
+> 정리하면
+> 
+> `Symmetric NAT` 방식은 `host ip + port` -> `External port` -> `Remote ip + port` 로 순차적으로 매핑되어 식별되며, <br>
+> `Full Cone NAT` 방식은 `host ip + port` -> `External port` 로만 매핑된다.
+
+### Restricted Cone NAT
+
+- Full Cone 방식에서 보안성을 조금 챙기기 위해 나온 방식이며, `ip`, `port` 두 가지 방식이 있다. 보통 `ip` 방식이 사용된다.
+- Full Cone 방식에서 `Remote ip`가 추가로 식별된다.
+  
+  <img src="https://github.com/user-attachments/assets/67d68cea-c223-4f2e-b337-446ce67bd33b" alt="adder" width="60%" />
+  
+  - 즉, 공유기와 통신을 한 `Remote Host`까지만 신경쓴다는 뜻이다.
+
+### Port Restricted Cone NAT
+
+- Restricted Cone에 추가로 `port`까지 식별하는 방식이다.
+  
+  <img src="https://github.com/user-attachments/assets/37600ae4-5079-4b2d-b6ac-2ffbeb791db1" alt="adder" width="60%" />
+
+  - 이 상태에서 Local host 하나가 같은 Web server에 추가로 패킷을 보내면 NAT table에 데이터가 추가될텐데, 이 때 `External Port`는 동일하게 추가된다.
+  - Symmetric NAT와 다른점은, 공유기에서의 `External Port`가 최대한 아껴서 더 열리지 않고 유지된다는 점이다.
+
+## 포트 포워딩
+
+- NAT table을 직접 수정하는 원리다. 즉, 외부에서 공유기로 접근할 때의 접근 `규칙`을 직접 정한다는 뜻이다.
+- 단, 게임이나 RTC, 토렌트 등과 같이 유저가 신경쓰지 않아도 되도록 포트 포워딩이 되어야 하는 경우가 필요하다!
+
+## UPnP(Universal Plug n Play)
+
+- 공유기 대부분이 해당 기능을 지원하며, 기본적으로 실행하는 것이 default 값으로 되어있다.
+- 포트 포워딩 설정이 자동화 된다. (`SSDP` 프로토콜)
