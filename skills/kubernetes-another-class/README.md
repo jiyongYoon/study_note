@@ -10,3 +10,4 @@
 3. 모니터링 툴 설치해보기 (Loki - Grafana)
 4. 쿠버네티스 오브젝트 개요
 5. Probe
+6. ConfigMap, Secret
