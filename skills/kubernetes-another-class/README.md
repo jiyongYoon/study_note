@@ -11,3 +11,4 @@
 4. 쿠버네티스 오브젝트 개요
 5. Probe
 6. ConfigMap, Secret
+7. PVC, PV
