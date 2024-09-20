@@ -12,3 +12,4 @@
 5. Probe
 6. ConfigMap, Secret
 7. PVC, PV
+8. Deployment
