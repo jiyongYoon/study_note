@@ -13,3 +13,4 @@
 6. ConfigMap, Secret
 7. PVC, PV
 8. Deployment
+9. Service
