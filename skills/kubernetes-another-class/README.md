@@ -14,3 +14,4 @@
 7. PVC, PV
 8. Deployment
 9. Service
+10. HPA(Horizontal Pod Autoscaling)
