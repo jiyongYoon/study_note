@@ -3,15 +3,18 @@
 
 ---
 
-### 목차
+## 목차
 
-1. 컨테이너 한방 정리
-2. 쿠버네티스 설치
-3. 모니터링 툴 설치해보기 (Loki - Grafana)
-4. 쿠버네티스 오브젝트 개요
-5. Probe
-6. ConfigMap, Secret
-7. PVC, PV
-8. Deployment
-9. Service
-10. HPA(Horizontal Pod Autoscaling)
+### Sprint 1
+
+1. [컨테이너 한방 정리](./sprint1/1.%20컨테이너%20한방%20정리/README.md) 
+2. [쿠버네티스 설치](./sprint1/2.%20쿠버네티스%20설치/README.md)
+3. [모니터링 툴 설치해보기 (Loki - Grafana)](./sprint1/3.%20모니터링%20툴%20설치해보기%20(Loki%20-%20Grafana)/README.md)
+4. [쿠버네티스 오브젝트 개요](./sprint1/4.%20쿠버네티스%20오브젝트%20개요/README.md)
+5. [Probe](./sprint1/5.%20Probe/README.md)
+6. [ConfigMap, Secret](./sprint1/6.%20ConfigMap,%20Secret/README.md)
+7. [PVC, PV](./sprint1/7.%20PVC,%20PV/README.md)
+8. [Deployment](./sprint1/8.%20Deployment/README.md)
+9. [Service](./sprint1/9.%20Service/README.md)
+10. [HPA(Horizontal Pod Autoscaling)](./sprint1/10.%20HPA/README.md)
+11. [Component 동작으로 이해하기](./sprint1/11.%20Component%20동작으로%20이해하기/README.md)
