@@ -21,4 +21,5 @@
 
 ### Sprint 2
 
-1. 
+1. [DevOps 한방 정리](./sprint2/1.%20DevOps%20한방%20정리/README.md)
+2. [CI/CD 서버환경 구성하기](./sprint2/2.%20CI&CD%20서버환경%20구성하기/README.md)
