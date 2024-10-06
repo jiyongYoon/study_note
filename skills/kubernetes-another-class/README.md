@@ -25,3 +25,4 @@
 2. [CI/CD 서버환경 구성하기](./sprint2/2.%20CI&CD%20서버환경%20구성하기/README.md)
 3. [Jenkins Pipeline](./sprint2/3.%20Jenkins%20Pipeline/README.md)
 4. [Helm과 Kustomize](./sprint2/4.%20Helm과%20Kustomize/README.md)
+5. [배포 파이프라인에서 마주하게 되는 고민들](./sprint2/5.%20배포%20파이프라인에서%20마주하게%20되는%20고민들/README.md)
