@@ -26,3 +26,4 @@
 3. [Jenkins Pipeline](./sprint2/3.%20Jenkins%20Pipeline/README.md)
 4. [Helm과 Kustomize](./sprint2/4.%20Helm과%20Kustomize/README.md)
 5. [배포 파이프라인에서 마주하게 되는 고민들](./sprint2/5.%20배포%20파이프라인에서%20마주하게%20되는%20고민들/README.md)
+6. [ArgoCD](./sprint2/6.%20ArgoCD/README.md)
