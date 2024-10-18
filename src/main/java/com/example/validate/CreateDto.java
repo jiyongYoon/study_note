@@ -5,7 +5,7 @@ import com.example.validate.custom.Password;
 import lombok.Getter;
 import lombok.ToString;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 
 @Getter
 @ToString

@@ -2,8 +2,8 @@ package com.example.validate.custom;
 
 import lombok.extern.slf4j.Slf4j;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 @Slf4j
 public class PasswordValidator implements ConstraintValidator<Password, Object> {
