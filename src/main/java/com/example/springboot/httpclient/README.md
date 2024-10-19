@@ -1,16 +1,17 @@
-# Spring 6 이상에서 사용가능한 Client 3종
+# Spring 6 이상에서 사용가능한 Http Client들
 
-- RestTemplate, WebClient, 그리고 HttpInterface
+- RestTemplate, RestClient, WebClient 그리고 HttpInterface
 
 ---
 
-이 내용은 [토비의 스프링 유튜브 영상](https://youtu.be/Kb37Q5GCyZs?si=8J-xxYWyhOLaPoOY)을 보고 학습 및 실습한 내용을 정리한 것입니다.
+이 내용은 [토비의 스프링 유튜브 영상](https://youtu.be/Kb37Q5GCyZs?si=8J-xxYWyhOLaPoOY), [코딩하는 오후 유튜브 영상](https://youtu.be/4rbkef88Z3w?si=hhepf7caa71qoU68)을 보고 학습 및 실습한 내용을 정리한 것입니다.
 
 ---
 
 ## 1. RestTemplate (Web)
 
 - 동기&블로킹 처리방식으로 많은 동시 요청을 처리해아하는 상황에서는 쓰레드 자원 낭비로 성능 문제가 생길 수 있다.
+- (Spring 5 이상부터는 주요 업데이트가 없음.)
 
 ### 사용
 
@@ -21,7 +22,46 @@
   System.out.println("RestTemplate: " + response.get("rates").get("KRW"));
   ```
 
-## 2. WebClient (Webflux)
+## 2. RestClient (Web)
+[공식문서 링크](https://docs.spring.io/spring-framework/reference/integration/rest-clients.html)
+
+- 기본적으로 동기 처리방식을 사용하며, Spring 6, Springboot 3.2부터 사용가능하다.
+- `fluent API` 사용을 위해 탄생했다고 보면 된다.
+
+> fluent API?
+> 
+> 메소드 체이닝에 기반한 객체 지향 API 설계 메소드.
+> 소스의 가독성을 증가시키고, 도메인에 특화된 언어(DSL, Domain Specific Language)로 작성할 수 있다는 것이 특징.
+> 
+> 흔한 예시는 우리가 자주 쓰는 QueryDSL이다.
+> ```java
+>  List<Member> findMember = queryFactory
+>                .select(member)
+>                .from(member)
+>                .where(member.id.eq(memberId))
+>                .fetch();
+> ```
+
+### 사용
+
+- Client Bean 등록
+  ```java
+  @Bean
+  RestClient restClient(RestClient.Builder builder) {
+      return builder
+              .requestFactory(new JdkClientHttpRequestFactory())
+              .baseUrl(Domain.ORIGIN)
+              .build();
+  }
+  ```
+  
+- 호출
+  ```java
+  Map<String, Map<String, Double>> response5 = restClient.get().uri(Domain.PATH).retrieve().body(Map.class);
+  System.out.println("RestClient: " + response5.get("rates").get("KRW"));
+  ```
+
+## 3. WebClient (Webflux)
 
 - 비동기&논블로킹 처리방식을 지원하며 메서드 체이닝 등을 활용하여 비동기 작업을 쉽게 구현할 수 있다.
 
@@ -40,12 +80,11 @@
   System.out.println("WebClient: " + response2.get("rates").get("KRW"));
   ```
 
-
-## 3. HttpInterface (Webflux)
+## 4. HttpInterface (Webflux)
 [공식문서 링크](https://docs.spring.io/spring-framework/reference/integration/rest-clients.html#rest-http-interface)
 
-- WebClient와 완전히 통합되며, Spring Framework 생태계에 통합되어 사용할 수 있다.
-  - 따라서 WebClient가 가진 비동기&논블로킹 처리방식을 그대로 지원한다. (그러나 비동기와 반응형 프로그래밍을 주 목적으로 한 도구는 아니라고 한다.)
+- HttpClient 구현체를 사용하여 Spring Framework 생태계에 통합되어 사용할 수 있다.
+  - RestClient, WebClient 등이 사용이 가능하므로 WebClient가 가진 비동기&논블로킹 처리방식을 그대로 사용할 수 있다. (그러나 비동기와 반응형 프로그래밍을 주 목적으로 한 도구는 아니라고 한다.)
 - 선언적인 API 클라이언트를 제공한다.
   - 인터페이스에 HTTP 요청 메서드를 선언하고, Spring이 이를 자동으로 구현해주는 방식이다.
   - 이렇게 하면 보일러 플레이트 코드를 줄여 생산성 향상에 도움을 줄 수 있다.
@@ -59,13 +98,14 @@
 
 - Interface(API) 정의
   ```java
+  @HttpExchange
   interface ErApi {
       @GetExchange("/v6/latest")
       Map getKRWRates();
   }
   ```
 
-- Client Bean 등록
+- Client Bean 등록 (WebClient 사용 예시)
   ```java
   @Bean
   ErApi erApi() {
@@ -86,7 +126,7 @@
   System.out.println("HttpInterfaceBean: " + response4.get("rates").get("KRW"));
   ```
 
-## 4. 동기와 비동기, 블로킹과 논블로킹, 반응형 프로그래밍
+## 5. 동기와 비동기, 블로킹과 논블로킹, 반응형 프로그래밍
 
 해당 내용을 학습하다보니 동기와 비동기, 블로킹과 논블로킹, 그리고 반응형 프로그래밍에 대해 추가로 학습하게 되었다.
 ([동기와 비동기, 블로킹과 논블로킹이 잘 설명되어 있는 블로그](https://velog.io/@nittre/%EB%B8%94%EB%A1%9C%ED%82%B9-Vs.-%EB%85%BC%EB%B8%94%EB%A1%9C%ED%82%B9-%EB%8F%99%EA%B8%B0-Vs.-%EB%B9%84%EB%8F%99%EA%B8%B0))
@@ -104,7 +144,7 @@
 
 정도로 정리할 수 있겠다. (사실 아직 비동기, 반응형 프로그래밍 코드를 실제로 작성해서 사용해본적이 없어서 이론적으로 이해하고 있는 중이다...)
 
-## 5. OkHttpClient + Retrofit2
+## 6. OkHttpClient + Retrofit2
 
 기존에 결제 서버를 구현할 때, 해당 스펙으로 ApiClient를 사용한 적이 있다. API를 선언적으로 정의하기 때문에 가독성 및 유지보수에 좋다고 판단하여 적용하였다. HttpInterface와는 어떤 차이점이 있을까?
 
@@ -123,13 +163,13 @@
 > 
 > - 독립적인 라이브러리로 안드로이드 개발이나 간단한 마이크로서비스에서 독립적인 REST 클라이언트로 사용하고 싶을 때
 
-## 6. 정리
+## 7. 정리
 
 학습한 내용으로 나만의 정리를 해보았다. 경험치가 없어 이론적인 내용만을 반영했다.
 
-1. 외부 서버에 간단하게 REST API call이 필요하다? -> `RestTemplate` 사용 (무척 간단)
+1. 외부 서버에 간단하게 REST API call이 필요하다? -> springboot 버전에 따라 `RestTemplate` or `RestClient` 사용 (무척 간단)
 2. 동일한 서버에 여러 REST API call을 많이 활용해야한다? -> `HttpInterface` 사용 (Client 설정도 범용적으로 가능)
-3. 특정 REST API call을 세밀하게 컨트롤해야한다? -> `WebClient` 사용 (헤더, 쿠키, 인증처리, 오류 핸들링 등 시나리오 활용 가능)
+3. 특정 REST API call을 세밀하게 컨트롤 해야하며 성능이 중요하다? -> `WebClient` 사용 (헤더, 쿠키, 인증처리, 오류 핸들링, 비동기&반응형 등의 다양한 시나리오 활용 가능)
 
 ---
 
