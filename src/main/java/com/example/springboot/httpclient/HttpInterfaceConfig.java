@@ -1,15 +1,17 @@
 package com.example.springboot.httpclient;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.support.WebClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @Configuration
+@RequiredArgsConstructor
 class HttpInterfaceConfig {
+
+    private final RestClient restClient;
 
 //    @Bean
 //    ErApi erApi() {
@@ -34,8 +36,7 @@ class HttpInterfaceConfig {
 //    }
 
     @Bean
-    ErApi restClientErApi(RestClient.Builder builder) {
-        RestClient restClient = builder.baseUrl(Domain.ORIGIN).build();
+    ErApi restClientErApi() {
         RestClientAdapter adapter = RestClientAdapter.create(restClient);
         HttpServiceProxyFactory httpServiceProxyFactory = HttpServiceProxyFactory
                 .builderFor(adapter)
