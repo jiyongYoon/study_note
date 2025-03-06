@@ -104,6 +104,12 @@
 
 ## 6. 데이터 타입
 
+### Type 확인
+
+- `Type {key}`
+
+  <img src="https://github.com/user-attachments/assets/43293e82-9c9f-4c9e-adba-735efc126def" alt="adder" width="60%" />
+
 ### String
 - 문자열, 숫자, 직렬화 객체(JSON) 등을 저장할 수 있음.
   - `SET {key} {value}`
