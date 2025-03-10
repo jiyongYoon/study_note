@@ -6,21 +6,17 @@ public class MyArray {
   public final int length;
 
   public MyArray(int[] arrValues) {
-    arr = arrValues;
-    int count = 0;
-    for (int arrValue : arrValues) {
-      count++;
+    length = arrValues.length;
+
+    arr = new int[length];
+    for (int i = 0; i < length; i++) {
+      arr[i] = arrValues[i];
     }
-    length = count;
   }
 
   public MyArray(int size) {
     arr = new int[size];
     length = size;
-  }
-
-  public int[] getInstance() {
-    return arr;
   }
 
   public int get(int index) {
@@ -37,6 +33,16 @@ public class MyArray {
     }
 
     arr[index] = value;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("[");
+    for (int i = 0; i < this.length - 1; i++) {
+      sb.append(arr[i]).append(", ");
+    }
+    sb.append(arr[length - 1]).append("]");
+    return sb.toString();
   }
 
   public static class MyArrayIndexOutOfBoundsException extends RuntimeException {

@@ -30,7 +30,7 @@ public class Practice3 {
     }
 
 //    System.out.println(Arrays.toString(arr));
-    System.out.println(Arrays.toString(arr.getInstance()));
+    System.out.println(arr);
 
   }
 }

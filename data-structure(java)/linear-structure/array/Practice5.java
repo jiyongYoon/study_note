@@ -58,7 +58,7 @@ public class Practice5 {
       valueCount.assign(curValue, valueCount.get(curValue) + 1);
     }
 
-    System.out.println(Arrays.toString(newArr.getInstance()));
+    System.out.println(arr);
 
     MyArray resultArr = new MyArray(newArrIndex);
     int resultArrIndex = 0;
@@ -66,6 +66,6 @@ public class Practice5 {
       resultArr.assign(resultArrIndex++, newArr.get(i));
     }
 
-    System.out.println(Arrays.toString(resultArr.getInstance()));
+    System.out.println(resultArr);
   }
 }
