@@ -12,7 +12,8 @@ public class Practice3 {
 
   public static void main(String[] args) {
 //    LinkedList<Integer> list = new LinkedList<>(Arrays.asList(1, 2, 2, 1));
-    LinkedList<Integer> list = new LinkedList<>(Arrays.asList(5, 1, 3, 3, 3, 1, 5));
+//    LinkedList<Integer> list = new LinkedList<>(Arrays.asList(5, 1, 3, 3, 3, 1, 5));
+    MyLinkedList<Integer> list = new MyLinkedList<>(Arrays.asList(5, 1, 3, 3, 3, 1, 5));
 
     int halfOfSize = list.size() / 2;
     int[] leftArr = new int[halfOfSize];

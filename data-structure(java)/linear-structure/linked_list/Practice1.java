@@ -12,7 +12,8 @@ import java.util.LinkedList;
 public class Practice1 {
 
   public static void main(String[] args) {
-    LinkedList<Integer> list = new LinkedList<>();
+//    LinkedList<Integer> list = new LinkedList<>();
+    MyLinkedList<Integer> list = new MyLinkedList<>();
     list.add(1);
     list.add(3);
     list.add(3);

@@ -13,7 +13,8 @@ import java.util.List;
 public class Practice2 {
 
   public static void main(String[] args) {
-    LinkedList<Integer> list = new LinkedList<>();
+//    LinkedList<Integer> list = new LinkedList<>();
+    MyLinkedList<Integer> list = new MyLinkedList<>();
     list.add(1);
     list.add(2);
     list.add(3);
@@ -25,7 +26,8 @@ public class Practice2 {
 
     LinkedList<Integer> resultList = new LinkedList<>();
 
-    List<Integer> reverseTarget = list.subList(startIndex - 1, endIndex);
+//    List<Integer> reverseTarget = list.subList(startIndex - 1, endIndex);
+    MyLinkedList<Integer> reverseTarget = list.subList(startIndex - 1, endIndex);
     System.out.println(reverseTarget);
 
     for (int i = 1; i <= list.size(); i++) {
