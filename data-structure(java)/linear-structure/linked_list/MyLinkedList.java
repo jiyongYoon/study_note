@@ -2,6 +2,7 @@ package linked_list;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 public class MyLinkedList<T> implements Iterable<T> {
 
@@ -27,6 +28,7 @@ public class MyLinkedList<T> implements Iterable<T> {
   }
 
   private MyNode<T> head;
+  private MyNode<T> tail;
   private int size;
 
   public MyLinkedList() {}
@@ -37,16 +39,21 @@ public class MyLinkedList<T> implements Iterable<T> {
       int index = 0;
       MyNode<T> curNode = this.head;
       for (T element : elements) {
+        MyNode<T> newNode;
         if (index == 0) {
-          MyNode<T> newNode = new MyNode<>(element);
+          newNode = new MyNode<>(element);
           this.head = newNode;
           curNode = newNode;
         } else {
-          MyNode<T> newNode = new MyNode<>(element);
+          newNode = new MyNode<>(element);
           curNode.next = newNode;
           curNode = newNode;
         }
         index++;
+
+        if (index == elements.size()) {
+          this.tail = newNode;
+        }
       }
       this.size = index;
     }
@@ -57,36 +64,28 @@ public class MyLinkedList<T> implements Iterable<T> {
   }
 
   public T get(int index) {
+    indexOutOfBoundsValidation(index);
     return getNode(index).getData();
-  }
-
-  public MyNode<T> getNode(int index) {
-    try {
-      MyNode<T> current = this.head;
-      for (int i = 0; i < index; i++) {
-        current = current.getNext();
-      }
-      return current;
-    } catch (NullPointerException e) {
-      throw new MyLinkedListIndexOutOfBoundsException();
-    }
   }
 
   public void add(T data) {
     if (this.head == null) {
       this.head = new MyNode<>(data);
+      this.tail = this.head;
       this.size++;
     } else {
       MyNode<T> lastNode = getLastNode();
-      addNextNode(lastNode, data);
+      this.tail = addNextNode(lastNode, data);
     }
   }
 
   public void add(int index, T data) {
+    indexOutOfBoundsValidation(index);
     if (index == 0) {
       MyNode<T> newNode = new MyNode<>(data);
       newNode.next = this.head;
       this.head = newNode;
+      this.tail = newNode;
       this.size++;
     } else {
       MyNode<T> curNode = getNode(index - 1);
@@ -94,21 +93,26 @@ public class MyLinkedList<T> implements Iterable<T> {
         MyNode<T> nextNode = curNode.getNext();
         MyNode<T> newNode = addNextNode(curNode, data);
         newNode.next = nextNode;
+        this.tail = newNode;
       } else {
-        addNextNode(curNode, data);
+        this.tail = addNextNode(curNode, data);
       }
     }
   }
 
   public boolean contains(T data) {
     MyNode<T> curNode = getNode(0);
-    if (curNode.getData().equals(data)) {
-      return true;
+    if (curNode == null) {
+      return false;
     } else {
-      while (curNode.hasNext()) {
-        curNode = curNode.getNext();
-        if (curNode.getData().equals(data)) {
-          return true;
+      if (curNode.getData().equals(data)) {
+        return true;
+      } else {
+        while (curNode.hasNext()) {
+          curNode = curNode.getNext();
+          if (curNode.getData().equals(data)) {
+            return true;
+          }
         }
       }
     }
@@ -143,18 +147,23 @@ public class MyLinkedList<T> implements Iterable<T> {
 
     return newList;
   }
+  private MyNode<T> getNode(int index) {
+    try {
+      MyNode<T> current = this.head;
+      for (int i = 0; i < index; i++) {
+        current = current.getNext();
+      }
+      return current;
+    } catch (NullPointerException e) {
+      throw new MyLinkedListIndexOutOfBoundsException();
+    }
+  }
 
   private MyNode<T> getLastNode() {
     if (this.head == null) {
       return null;
-    } else if (!this.head.hasNext()) {
-      return this.head;
     } else {
-      MyNode<T> current = this.head;
-      while (current.hasNext()) {
-        current = current.getNext();
-      }
-      return current;
+      return tail;
     }
   }
 
@@ -163,6 +172,12 @@ public class MyLinkedList<T> implements Iterable<T> {
     node.next = newNode;
     this.size++;
     return newNode;
+  }
+
+  private void indexOutOfBoundsValidation(int index) {
+    if (index < 0 || index > this.size) {
+      throw new MyLinkedListIndexOutOfBoundsException();
+    }
   }
 
   @Override
@@ -221,6 +236,33 @@ public class MyLinkedList<T> implements Iterable<T> {
 
     public MyLinkedListIllegalArgumentException(int fromIndex, int toIndex) {
       super("fromIndex(%d) > toIndex(%d)");
+    }
+  }
+
+  // tail 없이 add하는 test 용도
+  public void addFori(T data) {
+    if (this.head == null) {
+      this.head = new MyNode<>(data);
+      this.tail = this.head;
+      this.size++;
+    } else {
+      MyNode<T> lastNode = getLastNodeFori();
+      this.tail = addNextNode(lastNode, data);
+    }
+  }
+
+  // tail 없이 add하는 test 용도
+  private MyNode<T> getLastNodeFori() {
+    if (this.head == null) {
+      return null;
+    } else if (!this.head.hasNext()) {
+      return this.head;
+    } else {
+      MyNode<T> current = this.head;
+      while (current.hasNext()) {
+        current = current.getNext();
+      }
+      return current;
     }
   }
 }

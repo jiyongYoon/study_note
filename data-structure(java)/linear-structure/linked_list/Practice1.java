@@ -23,12 +23,10 @@ public class Practice1 {
     list.add(4);
     list.add(2);
 
-    LinkedList<Integer> resultList = new LinkedList<>();
+    MyLinkedList<Integer> resultList = new MyLinkedList<>();
     for (int i = 0; i < list.size(); i++) {
       Integer integer = list.get(i);
-      if (resultList.contains(integer)) {
-        continue;
-      } else {
+      if (!resultList.contains(integer)) {
         resultList.add(integer);
       }
     }
