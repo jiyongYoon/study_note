@@ -1,13 +1,13 @@
 ![img.png](img.png)
 
-## 간단 정리
+## I/O 간단 정리
 
-### 1. Java는 JVM 레벨에서 버퍼를 한번 더 이용한다. 
+### 1. Java는 JVM 레벨에서 버퍼를 한번 더 이용할 수 있다. 
 이 버퍼는 디스크 flush 전에 사용되는 OS 레벨의 버퍼(페이지 캐시;Page Cache)와는 다르며 JVM Process에 할당된 Heap Memory이다.
 이 버퍼의 목적은 OS 레벨의 버퍼에 데이터를 쓰는 `시스템 콜(open(), read(), write(), close()...)`를 줄이기 위함이다.
 
 ### 2. OS 레벨의 버퍼는 페이지 캐시 공간에 마련되며, OS가 관리한다.
-디스크 I/O는 속도가 매우 느리다. 모아서 flush하는 용도이다. 
+디스크 I/O는 속도가 매우 느리다. 따라서 OS 레벨의 버퍼가 있는데, 이는 I/O할 데이터를 모아서 한 번에 flush하는 용도이다. 
 
 > OS가 이 부분을 생각보다 훨씬 잘 관리한다. **적극적으로 활용하면 어떨까?** <br>
 > --> Kafka Broker의 철학; producer 데이터를 Page Cache에 적재하고, consumer가 데이터를 Page Cache에서 직접 읽는다. 즉, `Cache Hit`율을 극대화하여 성능 향상 

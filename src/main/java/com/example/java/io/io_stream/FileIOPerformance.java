@@ -1,10 +1,10 @@
-package com.example.java.file_IO;
+package com.example.java.io.io_stream;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class FileIOTest {
+public class FileIOPerformance {
 
   public static void main(String[] args) throws IOException {
     // Case 1: BufferedOutputStream 없음
