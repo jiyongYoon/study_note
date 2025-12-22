@@ -15,7 +15,7 @@ import java.util.Scanner;
  * `singleChannel.position(singleChannel.position() - length);` 해당 코드를 보면 <br>
  * 파일을 마치 메모리와 같이 위치에 직접 랜덤 엑세스해서 읽는 형태임. <br>
  */
-public class NioSyncIOSample {
+public class SyncIOSample {
 
   private static final String filePath = System.getProperty("user.dir") + "\\tmp\\test.txt";
   private static FileOutputStream fos;

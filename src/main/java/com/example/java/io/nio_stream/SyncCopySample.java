@@ -5,7 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
-public class NioSyncCopySample {
+public class SyncCopySample {
 
   public static void main(String[] args) {
     String srcPath = System.getProperty("user.dir") + "\\tmp\\test.txt";
