@@ -145,6 +145,8 @@ public class ChatServerSelector {
             System.out.println(msg);
 
             // 모든 클라이언트에게 메시지 브로드캐스트
+            // ⭐ 이 부분이 처리 로직을 이벤트 큐 및 스레드 등으로 따로 빼서 처리해야 함
+            // => 이벤트 루프 도는 스레드는 바로바로 이 루프를 계속 돌도록 놓아주어야 함
             sendMessageAll(selector, clientSocketChannel, msg);
           }
         }
