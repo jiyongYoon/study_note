@@ -1,16 +1,16 @@
-# Join이란
+# 1. Join이란
 
 두 개 이상의 table들에 있는 데이터를 한 번에 조회하는 것.
 
-# Join syntax 종류
+# 2. Join syntax 종류
 
-## Implicit Join (암묵적)
+## 1) Implicit Join (암묵적)
 
 - from 절에는 table들만 나열하고 where 절에 join condition을 명시하는 방식
 - old-style join syntax
 - 가독성이 많이 떨어져서 실수가 발생할 가능성이 커진다.
 
-### 에시 sql
+### 예시 sql
 
 ```sql
 SELECT D.name
@@ -18,7 +18,7 @@ FROM employee AS E, department AS D
 WHERE E.id = 1 and E.dept_id = D.id;
 ```
 
-## explicit join (명시적)
+## 2) explicit join (명시적)
 
 - 암묵적 join에서 발전한 join 문법
 - from 절에 JOIN 키워드를 함께 사용
@@ -33,9 +33,9 @@ FROM employee AS E
 WHERE E.id = 1;
 ```
 
-# Join 형태 종류
+# 3. Join 형태 종류
 
-## Inner Join
+## 1) Inner Join
 
 두 table에서 join condition을 만족하는 tuple들로 result table을 만드는 join
 
@@ -56,7 +56,7 @@ E.dept_id가 없는 경우는 결과에서 제외된다는 뜻이다.
 
 - 깊게 들어가면, null은 = 연산 시 unknown이 되는데, 이 값은 true가 아니기 때문에 결과값에서 제외되는 것이다.
 
-## Outer Join
+## 2) Outer Join
 
 <img src="https://github.com/user-attachments/assets/4f7f8624-032d-46fb-a611-d72716e10ecf" alt="adder" width="70%" />
 
@@ -70,29 +70,37 @@ FROM table1 FULL [OUTER] JOIN table2 ON join_condition
 - FULL은 양쪽 테이블 데이터가 모두 불러와지며, Join이 가능한 데이터만 묶어준다.
     - FULL은 postgresql에서만 지원한다.
 
-## Using
+## 3) Using / On
 
-join을 할 때, join을 할 컬럼을 명시해주어 join하는 기능. 컬럼명이 동일해야 사용가능
+join을 할 때 기준이 되는 컬럼을 명시하는 문법. 
+- Using: 컬럼명이 동일해야 사용가능
+- On: 컬럼명을 명시해주어 사용
 
 ```sql
+-- Using
 SELECT *
-FROM employee E JOIN department D USING (dept_id);
+FROM employee E 
+    JOIN department D USING (dept_id);
+
+-- On
+SELECT *
+FROM employee E 
+    JOIN department D ON E.dept_id = D.id;
 ```
 
-단, E.dept_id, D.id가 따로 나오지 않고 dept_id 컬럼으로 묶인 결과값이 나옴.
+단, `Using`은 E.dept_id, D.id가 따로 나오지 않고 dept_id 컬럼으로 묶인 결과값이 나오고, `On`은 컬럼이 각각 나옴.
 
 > MySQL에서는 cross join = inner join = join 이다.
-cross join에 ON(or USING)을 같이 쓰면 inner join으로 동작한다.
-inner join(or join)이 ON(or USING) 없이 사용되면 cross join으로 동작한다.
->
+> cross join에 ON(or USING)을 같이 쓰면 inner join으로 동작한다.
+> inner join(or join)이 ON(or USING) 없이 사용되면 cross join으로 동작한다.
 
-# DB 엔진의 동작 관점에서 Join의 종류
+# 4. DB 엔진의 동작 관점에서 Join의 종류
 
 - Nested Loop Join(중첩 루프 조인)
 - Hash Join(해시 조인)
 - Sort Merge Join(정렬 병합 조인)
 
-## Nested Loop Join
+## 1) Nested Loop Join
 
 [[DB] 데이터베이스 NESTED LOOPS JOIN (중첩 루프 조인)에 대하여](https://coding-factory.tistory.com/756)
 
@@ -105,7 +113,7 @@ inner join(or join)이 ON(or USING) 없이 사용되면 cross join으로 동작�
 - 드라이빙 테이블을 선택할 때 WHERE 절로 최대한의 데이터를 거르고 나서 Loop를 도는 것이 유리하다.
 - Driven 테이블에 인덱스가 있으면 Full Table Scan을 하지 않아도 되므로 유리해진다. (인덱스는 결국 정렬의 의미이다.)
 
-## Hash Join
+## 2) Hash Join
 
 [[DB] 데이터베이스 HASH JOIN (해시 조인)에 대하여](https://coding-factory.tistory.com/758)
 
@@ -118,7 +126,7 @@ inner join(or join)이 ON(or USING) 없이 사용되면 cross join으로 동작�
 - 결국 Hash 작업을 얼마나 빨리 잘 하느냐가 관건이기 때문에, CPU 성능과 작업에 필요한 메모리 확보가 필요하다.
 - Nested Loop 와 마찬가지로 드라이빙 테이블의 데이터 갯수를 줄이는 것이 중요하다.
 
-## Sort Merge Join
+## 3) Sort Merge Join
 
 [[DB] 데이터베이스 SORT MERGE JOIN (정렬 병합 조인)에 대하여](https://coding-factory.tistory.com/757)
 
@@ -130,7 +138,7 @@ inner join(or join)이 ON(or USING) 없이 사용되면 cross join으로 동작�
 - 양쪽 정렬이 모두 마쳐야 Join이 진행되므로 양쪽 정렬의 속도가 비슷해야 대기시간이 줄어든다. 데이터 양을 고려하는 것도 포인트가 될 수 있다.
 - DB 엔진 내부에서는 정렬을 위한 메모리 공간이 필요한데, 이 공간이 적절하게 확보되는 것도 필요하다.
 
-## 시간복잡도 계산방법 예시
+## 4) 시간복잡도 계산방법 예시
 
 <img src="https://github.com/user-attachments/assets/21d02533-ed28-4885-883c-dc7735bd0396" alt="adder" width="70%" />
 
