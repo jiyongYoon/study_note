@@ -482,6 +482,15 @@ CREATE INDEX idx_st_name ON students(name);
                   -> Single-row index lookup on st using PRIMARY (student_id=sc.student_id)  (cost=0.462 rows=1) (actual time=0.00503..0.00506 rows=1 loops=100348)
   ```
 
+### 개선 3 - sc 테이블에 (year, semester) 멀티컬럼 인덱스 or (year, semester, score) 커버링 인덱스
+
+- 해석 및 개선
+  - 개선 2 내용을 다시 살펴보는 중, 생각을 완전히 잘못한 부분이 있었다.
+  - 일단 student 테이블은 Full scan을 하고 있지 않으며, scores 테이블의 full scan이 진행되고 있음
+  - 따라서 이 부분을 (year, semester) 멀티컬럼 인덱스로 줄이면 더 빨라질 것으로 예상되며
+  - 더 욕심을 내면 (year, semester, score) 커버링 인덱스를 통해 본 테이블에 접근하지 않도록 할 수도 있을 것
+  - 다만, 현재 위 내용에 대한 테스트베드 재구축이 안되어 실제 테스트는 조금 어려움...
+
 ---
 
 ## 좋아요 많은 순으로 게시글 조회
